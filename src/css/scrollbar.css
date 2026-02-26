@@ -1,0 +1,30 @@
+/* =====================================================
+   SCROLLBAR STYLING — matches Claude's thin scrollbar
+   ===================================================== */
+#editor::-webkit-scrollbar,
+#preview-pane::-webkit-scrollbar {
+  width: 6px;
+}
+
+#editor::-webkit-scrollbar-track,
+#preview-pane::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#editor::-webkit-scrollbar-thumb,
+#preview-pane::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar-thumb);
+  border-radius: 3px;
+}
+
+#editor::-webkit-scrollbar-thumb:hover,
+#preview-pane::-webkit-scrollbar-thumb:hover {
+  background: var(--color-scrollbar-thumb-hover);
+}
+
+/* Firefox */
+#editor,
+#preview-pane {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-scrollbar-thumb) transparent;
+}

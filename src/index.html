@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paddown</title>
+
+  <!-- CSS — loaded in cascade order: tokens → layout → components → scrollbar -->
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/markdown.css">
+  <link rel="stylesheet" href="css/scrollbar.css">
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <div id="app-header">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2L4 20h3.6L12 9.6 16.4 20H20L12 2z" fill="currentColor"/>
+      </svg>
+      Paddown
+    </div>
+    <div class="pane-labels">
+      <span>Markdown</span>
+      <span>Preview</span>
+    </div>
+  </div>
+
+  <!-- ===== MENU BAR ===== -->
+  <div id="menu-bar"></div>
+
+  <!-- ===== TAB BAR ===== -->
+  <div id="tab-bar">
+    <div class="tab-items"></div>
+    <button class="tab-add" title="New tab (Ctrl+N)">+</button>
+  </div>
+
+  <!-- ===== TOOLBAR ===== -->
+  <div id="toolbar"></div>
+
+  <!-- ===== WORKSPACE ===== -->
+  <div id="workspace" class="mode-split">
+
+    <!-- Left: editor pane — textareas created dynamically by tabs.js -->
+    <div id="editor-pane"></div>
+
+    <!-- Right: live preview -->
+    <div id="preview-pane">
+      <div id="preview-inner">
+        <div id="preview" class="standard-markdown"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== STATUS BAR ===== -->
+  <div id="status-bar">
+    <span id="stat-cursor">Ln 1, Col 1</span>
+    <span id="stat-chars">0 chars</span>
+    <span id="stat-words">0 words</span>
+    <span id="stat-lines">0 lines</span>
+    <span>UTF-8</span>
+    <span id="stat-encoding">CRLF</span>
+  </div>
+
+  <!-- ===== DROP OVERLAY ===== -->
+  <div id="drop-overlay">Drop to open</div>
+
+  <!-- JS — loaded in dependency order -->
+  <script src="lib/marked.min.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/highlighter.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/file-io.js"></script>
+  <script src="js/tabs.js"></script>
+  <script src="js/editor.js"></script>
+  <script src="js/views.js"></script>
+  <script src="js/menus.js"></script>
+  <script src="js/context-menu.js"></script>
+  <script src="js/find.js"></script>
+  <script src="js/toolbar.js"></script>
+  <script src="js/export-html.js"></script>
+  <script src="js/settings.js"></script>
+  <script src="js/updater.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>

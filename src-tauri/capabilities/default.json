@@ -1,0 +1,10 @@
+{
+  "identifier": "default",
+  "description": "Default permissions for Paddown",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-destroy",
+    "window-state:default"
+  ]
+}

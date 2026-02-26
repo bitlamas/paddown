@@ -1,0 +1,66 @@
+/* =====================================================
+   DESIGN TOKEN LAYER
+   All colors derived from Claude's CSS variables +
+   screenshot analysis. Swap these to skin the whole app.
+
+   Dark mode: add [data-theme="dark"] override block below
+   with dark counterparts for all color tokens.
+   ===================================================== */
+:root {
+  /* Fonts — Anthropic's fallback stack from their own CSS */
+  --font-sans:  "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif;
+  --font-mono:  ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+
+  /* Text — from --text-100 / --text-200 */
+  --color-text-primary:   #14181f;
+  --color-text-secondary: #5a6275;
+
+  /* Borders — from --border-100 / --border-200 / --border-300 */
+  --color-border-100: #eaedf0;
+  --color-border-200: #d6dbe2;
+  --color-border-300: #b0b8c4;
+
+  /* Inline code red — from --danger-000 (text-danger-000 class) */
+  --color-danger: #cf3a48;
+
+  /* Code block surface */
+  --color-code-bg:     #f6f8fa;
+  --color-code-border: #e2e6ea;
+
+  /* App chrome */
+  --color-app-bg:     #f0f2f5;
+  --color-surface:    #ffffff;
+  --color-header-border: #e2e6ea;
+  --color-logo:       #d44950;
+
+  /* Inline code background — bg-text-200/5 */
+  --color-code-inline-bg: rgba(0, 0, 0, 0.04);
+
+  /* Link decoration — decoration-current/40 */
+  --color-link-decoration: rgba(20, 24, 31, 0.4);
+
+  /* Table borders — border-border-300 at 60% and 30% */
+  --color-table-border-head: rgba(176, 184, 196, 0.6);
+  --color-table-border-cell: rgba(176, 184, 196, 0.3);
+
+  /* Scrollbar — thumb colors */
+  --color-scrollbar-thumb:       rgba(176, 184, 196, 0.45);
+  --color-scrollbar-thumb-hover: rgba(176, 184, 196, 0.7);
+
+  /* Tab bar */
+  --color-tab-bg:          transparent;
+  --color-tab-active-bg:   #ffffff;
+  --color-tab-hover-bg:    rgba(0, 0, 0, 0.04);
+  --color-tab-border:      #e2e6ea;
+  --color-tab-close-hover: rgba(0, 0, 0, 0.08);
+
+  /* Syntax highlighting tokens — from Claude's actual inline styles */
+  --tok-keyword:  rgb(129, 0, 194);   /* purple: if, return, def */
+  --tok-number:   rgb(0, 128, 128);   /* teal: 1, 2, 10 */
+  --tok-comment:  rgb(110, 118, 135); /* gray: # comments */
+  --tok-string:   rgb(3, 106, 58);    /* green: "strings" */
+  --tok-operator: rgb(43, 48, 59);    /* dark: = + - */
+  --tok-punct:    rgb(43, 48, 59);    /* dark: ( ) { } */
+  --tok-fn:       rgb(0, 92, 197);    /* blue: function names */
+  --tok-tmpl:     rgb(0, 92, 197);    /* blue: template literals */
+}

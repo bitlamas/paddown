@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#E8384F"/>
+      <stop offset="100%" stop-color="#C42D42"/>
+    </linearGradient>
+    <linearGradient id="page" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#F0F2F5"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded square background -->
+  <rect x="0" y="0" width="1024" height="1024" rx="220" ry="220" fill="url(#bg)"/>
+
+  <!-- Notepad page -->
+  <rect x="220" y="160" width="584" height="704" rx="40" ry="40" fill="url(#page)" opacity="0.95"/>
+
+  <!-- Markdown down-arrow (the "pd" / paddown mark) -->
+  <path d="M 390 380 L 512 560 L 634 380" fill="none" stroke="#C42D42" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Horizontal lines (text lines on notepad) -->
+  <rect x="320" y="650" width="384" height="16" rx="8" fill="#C42D42" opacity="0.3"/>
+  <rect x="320" y="710" width="280" height="16" rx="8" fill="#C42D42" opacity="0.2"/>
+  <rect x="320" y="770" width="340" height="16" rx="8" fill="#C42D42" opacity="0.15"/>
+</svg>
