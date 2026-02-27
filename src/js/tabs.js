@@ -61,8 +61,6 @@ window.Paddown.tabs = (() => {
       const el = document.createElement('div');
       el.className = 'tab-item' + (tab.id === activeTabId ? ' active' : '');
       el.dataset.tabId = tab.id;
-      el.draggable = true;
-
       const isDirty = isTabDirty(tab);
       const titleSpan = document.createElement('span');
       titleSpan.className = 'tab-title';
@@ -82,13 +80,8 @@ window.Paddown.tabs = (() => {
       // Click to switch
       el.addEventListener('click', () => switchTab(tab.id));
 
-      // Drag events
-      el.addEventListener('dragstart', onDragStart);
-      el.addEventListener('dragover', onDragOver);
-      el.addEventListener('dragenter', onDragEnter);
-      el.addEventListener('dragleave', onDragLeave);
-      el.addEventListener('drop', onDrop);
-      el.addEventListener('dragend', onDragEnd);
+      // Mouse-based drag reorder
+      el.addEventListener('mousedown', onTabMouseDown);
 
       container.appendChild(el);
     });
@@ -301,53 +294,92 @@ window.Paddown.tabs = (() => {
     switchTab(tabs[prev].id);
   }
 
-  // ─── Drag & Drop Reorder ───────────────────────────────────
+  // ─── Mouse-based Tab Reorder ────────────────────────────────
+  // Uses mousedown/mousemove/mouseup instead of HTML5 DnD,
+  // which Tauri v2 WebView2 intercepts for native file drops.
 
-  let dragTabId = null;
+  let dragState = null; // { tabId, startX, started, el }
 
-  function onDragStart(e) {
-    dragTabId = e.currentTarget.dataset.tabId;
-    e.currentTarget.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', dragTabId);
+  function cleanupDrag() {
+    document.removeEventListener('mousemove', onDragMouseMove);
+    document.removeEventListener('mouseup', onDragMouseUp);
+
+    if (dragState && dragState.started) {
+      dragState.el.classList.remove('dragging');
+      tabBarEl.querySelectorAll('.drag-over').forEach(
+        el => el.classList.remove('drag-over')
+      );
+    }
+
+    dragState = null;
   }
 
-  function onDragOver(e) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+  function onTabMouseDown(e) {
+    // Only left-click, ignore close button
+    if (e.button !== 0) return;
+    if (e.target.closest('.tab-close')) return;
+
+    // Clean up any in-progress drag (defensive)
+    if (dragState) cleanupDrag();
+
+    dragState = {
+      tabId: e.currentTarget.dataset.tabId,
+      startX: e.clientX,
+      started: false,
+      el: e.currentTarget
+    };
+
+    document.addEventListener('mousemove', onDragMouseMove);
+    document.addEventListener('mouseup', onDragMouseUp);
   }
 
-  function onDragEnter(e) {
-    e.currentTarget.classList.add('drag-over');
+  function onDragMouseMove(e) {
+    if (!dragState) return;
+
+    // 5px threshold before starting drag
+    if (!dragState.started) {
+      if (Math.abs(e.clientX - dragState.startX) < 5) return;
+      dragState.started = true;
+      dragState.el.classList.add('dragging');
+    }
+
+    // Find tab under cursor and show indicator
+    const container = tabBarEl.querySelector('.tab-items');
+    container.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+
+    const target = document.elementFromPoint(e.clientX, e.clientY);
+    if (!target) return;
+    const targetTab = target.closest('.tab-item');
+    if (targetTab && targetTab.dataset.tabId !== dragState.tabId) {
+      targetTab.classList.add('drag-over');
+    }
   }
 
-  function onDragLeave(e) {
-    e.currentTarget.classList.remove('drag-over');
-  }
+  function onDragMouseUp(e) {
+    if (!dragState) return;
 
-  function onDrop(e) {
-    e.preventDefault();
-    e.currentTarget.classList.remove('drag-over');
+    const didDrag = dragState.started;
 
-    const targetTabId = e.currentTarget.dataset.tabId;
-    if (!dragTabId || dragTabId === targetTabId) return;
+    if (didDrag) {
+      // Find drop target
+      const target = document.elementFromPoint(e.clientX, e.clientY);
+      const targetTab = target ? target.closest('.tab-item') : null;
 
-    const fromIdx = tabs.findIndex(t => t.id === dragTabId);
-    const toIdx = tabs.findIndex(t => t.id === targetTabId);
-    if (fromIdx === -1 || toIdx === -1) return;
+      if (targetTab && targetTab.dataset.tabId !== dragState.tabId) {
+        const fromIdx = tabs.findIndex(t => t.id === dragState.tabId);
+        const toIdx = tabs.findIndex(t => t.id === targetTab.dataset.tabId);
+        if (fromIdx !== -1 && toIdx !== -1) {
+          const [moved] = tabs.splice(fromIdx, 1);
+          tabs.splice(toIdx, 0, moved);
+        }
+      }
+    }
 
-    // Reorder
-    const [moved] = tabs.splice(fromIdx, 1);
-    tabs.splice(toIdx, 0, moved);
-
-    renderTabBar();
-  }
-
-  function onDragEnd(e) {
-    dragTabId = null;
-    e.currentTarget.classList.remove('dragging');
-    // Clean up any lingering drag-over classes
-    tabBarEl.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    // renderTabBar rebuilds the DOM, which implicitly suppresses the
+    // click event that would otherwise fire after mouseup on the
+    // original (now-detached) element.
+    cleanupDrag();
+    if (didDrag) renderTabBar();
   }
 
   // ─── Init ───────────────────────────────────────────────────
@@ -362,6 +394,22 @@ window.Paddown.tabs = (() => {
     if (addBtn) {
       addBtn.addEventListener('click', () => createTab());
     }
+
+    // Double-click empty tab bar area → new tab
+    const tabItems = tabBarEl.querySelector('.tab-items');
+    if (tabItems) {
+      tabItems.addEventListener('dblclick', (e) => {
+        if (e.target === tabItems) createTab();
+      });
+    }
+
+    // Cancel drag if window loses focus (mouse released outside WebView2)
+    window.addEventListener('blur', () => {
+      if (dragState) {
+        cleanupDrag();
+        renderTabBar();
+      }
+    });
 
     // Create initial blank tab
     createTab();

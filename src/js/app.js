@@ -4,7 +4,7 @@
  * wires menu/toolbar actions, and handles window events.
  */
 document.addEventListener('DOMContentLoaded', async () => {
-  const { renderer, editor, fileIO, tabs, views, menus, contextMenu, find, toolbar, settings, exportHtml, updater } = window.Paddown;
+  const { renderer, editor, fileIO, tabs, views, menus, contextMenu, find, toolbar, settings, exportHtml, updater, welcome } = window.Paddown;
 
   // ─── Initialize Modules ─────────────────────────────────────
 
@@ -144,9 +144,62 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Help
     about: async () => {
+      if (document.getElementById('about-overlay')) return;
+
       let version = '0.1.0';
       try { if (fileIO.isDesktop()) version = await window.__TAURI__.core.invoke('get_app_version'); } catch (_) {}
-      alert(`Paddown v${version}\nMarkdown notepad that renders identically to Claude Desktop.`);
+
+      const overlay = document.createElement('div');
+      overlay.id = 'about-overlay';
+
+      const card = document.createElement('div');
+      card.id = 'about-card';
+
+      const logo = document.createElement('img');
+      logo.src = 'assets/icon-128.png';
+      logo.alt = 'Paddown';
+      logo.className = 'about-logo';
+      logo.width = 64;
+      logo.height = 64;
+
+      const title = document.createElement('h2');
+      title.textContent = 'Paddown';
+
+      const ver = document.createElement('p');
+      ver.className = 'about-version';
+      ver.textContent = `v${version}`;
+
+      const tagline = document.createElement('p');
+      tagline.className = 'about-tagline';
+      tagline.textContent = 'Markdown notepad with professional chat interface styling. Write notes offline, paste with zero formatting surprises.';
+
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'about-close';
+      closeBtn.textContent = '\u00D7';
+
+      card.append(logo, title, ver, tagline, closeBtn);
+      overlay.appendChild(card);
+      document.body.appendChild(overlay);
+
+      void overlay.offsetHeight; // force layout for CSS transition
+      overlay.classList.add('visible');
+
+      function close() {
+        overlay.classList.remove('visible');
+        const fallback = setTimeout(() => overlay.remove(), 300);
+        overlay.addEventListener('transitionend', (e) => {
+          if (e.target === overlay) { clearTimeout(fallback); overlay.remove(); }
+        }, { once: true });
+        document.removeEventListener('keydown', onKey);
+      }
+
+      function onKey(e) {
+        if (e.key === 'Escape') { e.preventDefault(); close(); }
+      }
+
+      closeBtn.addEventListener('click', close);
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+      document.addEventListener('keydown', onKey);
     }
   };
 
@@ -288,6 +341,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }
     } catch (_) {}
+  }
+
+  // ─── Welcome Content (first run, no CLI files) ───────────
+
+  if (fileIO.isDesktop() && settings.isFirstRun()) {
+    const active = tabs.getActiveTab();
+    if (active && tabs.isTabBlankUntitled(active)) {
+      const ta = tabs.getActiveTextarea();
+      if (ta) {
+        ta.value = welcome.getContent();
+        active.savedContent = ta.value;
+        editor.render();
+      }
+    }
   }
 
   // ─── Window Close Handler ─────────────────────────────────

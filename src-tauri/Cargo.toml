@@ -1,7 +1,7 @@
 [package]
 name = "paddown"
 version = "0.1.0"
-description = "Markdown notepad that renders identically to Claude Desktop"
+description = "Markdown notepad with professional chat interface styling"
 authors = ["Paddown"]
 edition = "2021"
 

@@ -16,14 +16,6 @@ window.Paddown.views = (() => {
 
     workspaceEl.classList.remove('mode-split', 'mode-editor-only', 'mode-preview-only');
     workspaceEl.classList.add(`mode-${mode}`);
-
-    // Update pane labels visibility
-    const labels = document.querySelector('#app-header .pane-labels');
-    if (labels) {
-      const spans = labels.querySelectorAll('span');
-      spans[0].style.visibility = mode === 'preview-only' ? 'hidden' : '';
-      spans[1].style.visibility = mode === 'editor-only' ? 'hidden' : '';
-    }
   }
 
   function getMode() {

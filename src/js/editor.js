@@ -71,9 +71,19 @@ window.Paddown.editor = (() => {
     }
   }
 
-  // ─── Scroll Sync (editor → preview) ──────────────────────
+  // ─── Bidirectional Scroll Sync ──────────────────────────────
+
+  let scrollSyncSource = null; // 'editor' | 'preview' | 'restore' | null
+  let syncClearTimer = 0;
+
+  function clearSyncFlag() {
+    clearTimeout(syncClearTimer);
+    syncClearTimer = setTimeout(() => { scrollSyncSource = null; }, 50);
+  }
 
   function onEditorScroll() {
+    if (scrollSyncSource) return;
+
     const views = window.Paddown.views;
     if (views && views.getMode() !== 'split') return;
 
@@ -83,8 +93,30 @@ window.Paddown.editor = (() => {
     const previewPane = document.getElementById('preview-pane');
     if (!previewPane) return;
 
-    const editorRatio = ta.scrollTop / (ta.scrollHeight - ta.clientHeight || 1);
+    scrollSyncSource = 'editor';
+    const editorMax = Math.max(ta.scrollHeight - ta.clientHeight, 1);
+    const editorRatio = ta.scrollTop / editorMax;
     previewPane.scrollTop = editorRatio * (previewPane.scrollHeight - previewPane.clientHeight);
+    clearSyncFlag();
+  }
+
+  function onPreviewScroll() {
+    if (scrollSyncSource) return;
+
+    const views = window.Paddown.views;
+    if (views && views.getMode() !== 'split') return;
+
+    const ta = currentTextarea;
+    if (!ta) return;
+
+    const previewPane = document.getElementById('preview-pane');
+    if (!previewPane) return;
+
+    scrollSyncSource = 'preview';
+    const previewMax = Math.max(previewPane.scrollHeight - previewPane.clientHeight, 1);
+    const previewRatio = previewPane.scrollTop / previewMax;
+    ta.scrollTop = previewRatio * (ta.scrollHeight - ta.clientHeight);
+    clearSyncFlag();
   }
 
   // Called by tabs.js when switching tabs — attach listeners to new textarea
@@ -109,6 +141,10 @@ window.Paddown.editor = (() => {
       ta.focus();
     }
 
+    // Suppress scroll sync during tab restore to avoid overwriting
+    // the saved scroll positions with ratio-computed values
+    scrollSyncSource = 'restore';
+
     render();
 
     // Restore preview scroll
@@ -117,6 +153,8 @@ window.Paddown.editor = (() => {
     if (tab && previewPane) {
       previewPane.scrollTop = tab.previewScrollTop;
     }
+
+    clearSyncFlag();
   }
 
   function init() {
@@ -126,6 +164,12 @@ window.Paddown.editor = (() => {
     statLines    = document.getElementById('stat-lines');
     statEncoding = document.getElementById('stat-encoding');
     statCursor   = document.getElementById('stat-cursor');
+
+    // Preview → Editor scroll sync
+    const previewPane = document.getElementById('preview-pane');
+    if (previewPane) {
+      previewPane.addEventListener('scroll', onPreviewScroll);
+    }
   }
 
   return { init, render, attachToTextarea };

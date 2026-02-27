@@ -1,7 +1,7 @@
 /**
  * Paddown — Syntax highlighter
  * Character-level tagging to avoid overlapping spans.
- * Token colors match Claude's inline styles exactly.
+ * Token colors match the reference chat interface exactly.
  * Supports: JavaScript, Python, HTML, CSS, Bash, JSON, SQL, PHP.
  */
 window.Paddown = window.Paddown || {};

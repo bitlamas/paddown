@@ -1,13 +1,14 @@
 /* =====================================================
    DESIGN TOKEN LAYER
-   All colors derived from Claude's CSS variables +
-   screenshot analysis. Swap these to skin the whole app.
+   All colors derived from the reference chat interface's
+   CSS variables + screenshot analysis. Swap these to
+   skin the whole app.
 
    Dark mode: add [data-theme="dark"] override block below
    with dark counterparts for all color tokens.
    ===================================================== */
 :root {
-  /* Fonts — Anthropic's fallback stack from their own CSS */
+  /* Fonts — reference chat interface fallback stack */
   --font-sans:  "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif;
   --font-mono:  ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 
@@ -30,8 +31,7 @@
   /* App chrome */
   --color-app-bg:     #f0f2f5;
   --color-surface:    #ffffff;
-  --color-header-border: #e2e6ea;
-  --color-logo:       #d44950;
+  --color-preview-bg: #faf9f5;
 
   /* Inline code background — bg-text-200/5 */
   --color-code-inline-bg: rgba(0, 0, 0, 0.04);
@@ -54,7 +54,7 @@
   --color-tab-border:      #e2e6ea;
   --color-tab-close-hover: rgba(0, 0, 0, 0.08);
 
-  /* Syntax highlighting tokens — from Claude's actual inline styles */
+  /* Syntax highlighting tokens — from reference chat interface inline styles */
   --tok-keyword:  rgb(129, 0, 194);   /* purple: if, return, def */
   --tok-number:   rgb(0, 128, 128);   /* teal: 1, 2, 10 */
   --tok-comment:  rgb(110, 118, 135); /* gray: # comments */

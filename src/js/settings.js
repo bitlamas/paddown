@@ -17,6 +17,7 @@ window.Paddown.settings = (() => {
   const MAX_RECENT = 10;
   let current = { ...DEFAULTS };
   let portablePath = null; // set if portable mode detected
+  let wasLoadedFromFile = false;
 
   function invoke(cmd, args) {
     return window.__TAURI__.core.invoke(cmd, args);
@@ -35,9 +36,11 @@ window.Paddown.settings = (() => {
       }
       const parsed = JSON.parse(raw);
       current = { ...DEFAULTS, ...parsed };
+      wasLoadedFromFile = true;
     } catch (err) {
-      console.error('Failed to load settings:', err);
+      // File doesn't exist on first run, or parse error
       current = { ...DEFAULTS };
+      wasLoadedFromFile = false;
     }
     return current;
   }
@@ -106,8 +109,12 @@ window.Paddown.settings = (() => {
     }
   }
 
+  function isFirstRun() {
+    return !wasLoadedFromFile;
+  }
+
   return {
-    load, save, get, set, isPortable,
+    load, save, get, set, isPortable, isFirstRun,
     getRecentFiles, addRecentFile, clearRecentFiles,
     applyToUI
   };

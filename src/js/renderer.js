@@ -1,7 +1,7 @@
 /**
  * Paddown — Markdown renderer configuration
  * Uses marked.js v4.3.0 with custom renderer for code blocks,
- * tables, and task lists to match Claude's rendering.
+ * tables, and task lists to match the chat interface rendering.
  */
 window.Paddown = window.Paddown || {};
 

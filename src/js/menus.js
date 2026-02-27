@@ -106,6 +106,7 @@ window.Paddown.menus = (() => {
         if (item.checkable) {
           const check = document.createElement('span');
           check.className = 'menu-check';
+          check.dataset.mode = item.mode;
           const currentMode = window.Paddown.views?.getMode();
           check.textContent = currentMode === item.mode ? '\u2713' : '';
           row.appendChild(check);
@@ -145,8 +146,16 @@ window.Paddown.menus = (() => {
     }
   }
 
+  function updateCheckmarks() {
+    const currentMode = window.Paddown.views?.getMode();
+    menuBarEl.querySelectorAll('.menu-check').forEach(check => {
+      check.textContent = check.dataset.mode === currentMode ? '\u2713' : '';
+    });
+  }
+
   function openMenu(key) {
     closeAll();
+    updateCheckmarks();
     activeMenu = key;
     const trigger = menuBarEl.querySelector(`.menu-item[data-menu="${key}"] .menu-trigger`);
     const dropdown = menuBarEl.querySelector(`.menu-dropdown[data-menu="${key}"]`);
