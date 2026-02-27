@@ -1,6 +1,6 @@
 # Paddown
 
-A lightweight Markdown notepad with a professional chat-style preview. Write notes offline, paste anywhere with zero formatting surprises.
+A lightweight Markdown notepad with a clean chat-style preview.
 
 ## Features
 
