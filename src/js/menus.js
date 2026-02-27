@@ -25,6 +25,8 @@ window.Paddown.menus = (() => {
         { label: 'Export as HTML\u2026', action: 'exportHtml' },
         { type: 'separator' },
         { label: 'Close Tab', shortcut: 'Ctrl+W', action: 'closeTab' },
+        { type: 'separator' },
+        { label: 'Settings\u2026', action: 'settings' },
         { label: 'Exit', action: 'exit' }
       ]
     },

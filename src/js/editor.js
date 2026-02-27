@@ -165,6 +165,20 @@ window.Paddown.editor = (() => {
     statEncoding = document.getElementById('stat-encoding');
     statCursor   = document.getElementById('stat-cursor');
 
+    // Open links in default browser instead of navigating in-app
+    previewEl.addEventListener('click', (e) => {
+      const link = e.target.closest('a');
+      if (!link) return;
+      e.preventDefault();
+      const href = link.getAttribute('href');
+      if (!href || href.startsWith('#')) return;
+      if (window.__TAURI__) {
+        window.__TAURI__.core.invoke('open_url', { url: href });
+      } else {
+        window.open(href, '_blank');
+      }
+    });
+
     // Preview → Editor scroll sync
     const previewPane = document.getElementById('preview-pane');
     if (previewPane) {

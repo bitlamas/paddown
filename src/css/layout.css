@@ -534,7 +534,7 @@ body {
 }
 
 #about-card {
-  background: var(--color-surface);
+  background: var(--color-about-bg);
   border-radius: 12px;
   padding: 2rem 2.5rem;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
@@ -603,4 +603,75 @@ body {
 .about-close:hover {
   background: var(--color-tab-hover-bg);
   color: var(--color-text-primary);
+}
+
+/* =====================================================
+   SETTINGS MODAL
+   ===================================================== */
+#settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4000;
+  transition: background 0.15s ease;
+}
+
+#settings-overlay.visible {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+#settings-card {
+  background: var(--color-surface);
+  border-radius: 12px;
+  padding: 2rem 2.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  max-width: 400px;
+  width: 90%;
+  position: relative;
+  transform: scale(0.95);
+  opacity: 0;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+#settings-overlay.visible #settings-card {
+  transform: scale(1);
+  opacity: 1;
+}
+
+#settings-card h2 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: 1.25rem;
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.settings-section-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.settings-radio {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  padding: 0.25rem 0;
+}
+
+.settings-radio input[type="radio"] {
+  margin: 0;
+  accent-color: var(--color-text-primary);
 }

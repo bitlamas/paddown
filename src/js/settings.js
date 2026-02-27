@@ -11,7 +11,9 @@ window.Paddown.settings = (() => {
     showToolbar: true,
     viewMode: 'split',
     recentFiles: [],
-    wordWrap: true
+    wordWrap: true,
+    startupMode: 'welcome',
+    openTabs: []
   };
 
   const MAX_RECENT = 10;

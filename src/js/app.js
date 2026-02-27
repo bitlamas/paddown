@@ -142,6 +142,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     inlineCode:    () => toolbar.getAction('inlineCode')?.(),
     link:          () => toolbar.getAction('link')?.(),
 
+    // Settings
+    settings: () => window.Paddown.settingsUI.open(),
+
     // Help
     about: async () => {
       if (document.getElementById('about-overlay')) return;
@@ -343,17 +346,68 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (_) {}
   }
 
-  // ─── Welcome Content (first run, no CLI files) ───────────
+  // ─── Startup Mode ──────────────────────────────────────────
 
-  if (fileIO.isDesktop() && settings.isFirstRun()) {
-    const active = tabs.getActiveTab();
-    if (active && tabs.isTabBlankUntitled(active)) {
-      const ta = tabs.getActiveTextarea();
-      if (ta) {
-        ta.value = welcome.getContent();
-        active.savedContent = ta.value;
-        editor.render();
+  if (fileIO.isDesktop()) {
+    // Only apply startup mode if no CLI files were opened
+    const cliOpened = tabs.getAllTabs().some(t => t.filePath);
+
+    if (!cliOpened) {
+      const startupMode = settings.get('startupMode') || 'welcome';
+
+      if (startupMode === 'restore') {
+        const savedTabs = settings.get('openTabs') || [];
+        let restored = 0;
+
+        for (const saved of savedTabs) {
+          if (!saved.filePath) continue;
+          try {
+            const rawContent = await window.__TAURI__.core.invoke('read_file', { path: saved.filePath });
+            const lineEnding = fileIO.detectLineEnding(rawContent);
+            const content = fileIO.normalizeForEditor(rawContent);
+
+            const active = tabs.getActiveTab();
+            if (restored === 0 && tabs.isTabBlankUntitled(active)) {
+              tabs.loadIntoTab(active.id, content, saved.filePath, lineEnding);
+            } else {
+              tabs.createTab({
+                title: saved.filePath.split(/[/\\]/).pop(),
+                filePath: saved.filePath,
+                content,
+                lineEnding
+              });
+            }
+
+            // Restore cursor and scroll position
+            const ta = tabs.getActiveTextarea();
+            if (ta && saved.cursorStart != null) {
+              ta.setSelectionRange(saved.cursorStart, saved.cursorEnd || saved.cursorStart);
+              requestAnimationFrame(() => {
+                ta.scrollTop = saved.scrollTop || 0;
+              });
+            }
+
+            restored++;
+          } catch (err) {
+            console.warn('Failed to restore tab:', saved.filePath, err);
+          }
+        }
+
+        if (restored > 0) editor.render();
+        // If no tabs restored, fall through — blank tab already exists
+
+      } else if (startupMode === 'welcome' || settings.isFirstRun()) {
+        const active = tabs.getActiveTab();
+        if (active && tabs.isTabBlankUntitled(active)) {
+          const ta = tabs.getActiveTextarea();
+          if (ta) {
+            ta.value = welcome.getContent();
+            active.savedContent = ta.value;
+            editor.render();
+          }
+        }
       }
+      // startupMode === 'blank' → do nothing, blank tab already exists
     }
   }
 
@@ -362,8 +416,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (fileIO.isDesktop() && window.__TAURI__?.window?.getCurrentWindow) {
     const appWindow = window.__TAURI__.window.getCurrentWindow();
 
-    appWindow.onCloseRequested((event) => {
+    appWindow.onCloseRequested(async (event) => {
       event.preventDefault();
+
+      // Save open tabs for session restore
+      if (settings.get('startupMode') === 'restore') {
+        const allTabs = tabs.getAllTabs();
+        const openTabs = allTabs
+          .filter(t => t.filePath)
+          .map(t => {
+            const ta = document.getElementById(`editor-${t.id}`);
+            return {
+              filePath: t.filePath,
+              cursorStart: ta ? ta.selectionStart : 0,
+              cursorEnd: ta ? ta.selectionEnd : 0,
+              scrollTop: ta ? ta.scrollTop : 0
+            };
+          });
+        settings.set('openTabs', openTabs);
+        await settings.save();
+      }
 
       const dirtyTabs = tabs.getDirtyTabs();
       if (dirtyTabs.length === 0) {

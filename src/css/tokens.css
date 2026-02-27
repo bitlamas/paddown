@@ -32,6 +32,7 @@
   --color-app-bg:     #f0f2f5;
   --color-surface:    #ffffff;
   --color-preview-bg: #faf9f5;
+  --color-about-bg:   #ebe6df;
 
   /* Inline code background — bg-text-200/5 */
   --color-code-inline-bg: rgba(0, 0, 0, 0.04);

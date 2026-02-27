@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::os::windows::process::CommandExt;
 use tauri::Manager;
 
 /// Maximum file size we'll read (50MB)
@@ -203,6 +204,21 @@ fn check_for_updates(current_version: String) -> Result<Option<UpdateInfo>, Stri
     }
 }
 
+// ─── Open URL in Default Browser ────────────────────────────
+
+#[tauri::command]
+fn open_url(url: String) -> Result<(), String> {
+    if !url.starts_with("http://") && !url.starts_with("https://") {
+        return Err("Only http/https URLs are supported".to_string());
+    }
+    std::process::Command::new("cmd")
+        .args(["/C", "start", "", &url])
+        .creation_flags(0x08000000) // CREATE_NO_WINDOW
+        .spawn()
+        .map_err(|e| format!("Failed to open URL: {}", e))?;
+    Ok(())
+}
+
 // ─── Get App Version Command ────────────────────────────────
 
 #[tauri::command]
@@ -227,6 +243,7 @@ pub fn run() {
             get_settings_path,
             get_cli_args,
             get_portable_settings_path,
+            open_url,
             check_for_updates,
             get_app_version,
         ])
