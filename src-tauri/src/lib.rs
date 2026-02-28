@@ -458,6 +458,10 @@ fn stop_watching(app: tauri::AppHandle, path: String) -> Result<(), String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Work around WebKitGTK EGL failures on Linux without DMA-BUF support
+    #[cfg(target_os = "linux")]
+    std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+
     tauri::Builder::default()
         .plugin(tauri_plugin_window_state::Builder::new().build())
         .manage(WatcherState(Mutex::new(HashMap::new())))
