@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+#[cfg(windows)]
 use std::os::windows::process::CommandExt;
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -215,11 +216,30 @@ fn open_url(url: String) -> Result<(), String> {
     if !url.starts_with("http://") && !url.starts_with("https://") {
         return Err("Only http/https URLs are supported".to_string());
     }
-    std::process::Command::new("cmd")
-        .args(["/C", "start", "", &url])
-        .creation_flags(0x08000000) // CREATE_NO_WINDOW
-        .spawn()
-        .map_err(|e| format!("Failed to open URL: {}", e))?;
+
+    #[cfg(windows)]
+    {
+        std::process::Command::new("rundll32")
+            .args(["url.dll,FileProtocolHandler", &url])
+            .creation_flags(0x08000000) // CREATE_NO_WINDOW
+            .spawn()
+            .map_err(|e| format!("Failed to open URL: {}", e))?;
+    }
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(&url)
+            .spawn()
+            .map_err(|e| format!("Failed to open URL: {}", e))?;
+    }
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(&url)
+            .spawn()
+            .map_err(|e| format!("Failed to open URL: {}", e))?;
+    }
+
     Ok(())
 }
 
@@ -359,11 +379,32 @@ fn reveal_in_explorer(path: String) -> Result<(), String> {
     if !p.exists() {
         return Err(format!("Path does not exist: {}", path));
     }
-    std::process::Command::new("explorer")
-        .args(["/select,", &path])
-        .creation_flags(0x08000000) // CREATE_NO_WINDOW
-        .spawn()
-        .map_err(|e| format!("Failed to reveal in explorer: {}", e))?;
+
+    #[cfg(windows)]
+    {
+        std::process::Command::new("explorer")
+            .args(["/select,", &path])
+            .spawn()
+            .map_err(|e| format!("Failed to reveal in explorer: {}", e))?;
+    }
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .args(["-R", &path])
+            .spawn()
+            .map_err(|e| format!("Failed to reveal in Finder: {}", e))?;
+    }
+    #[cfg(target_os = "linux")]
+    {
+        let parent = p.parent()
+            .map(|d| d.to_string_lossy().into_owned())
+            .unwrap_or_else(|| path.clone());
+        std::process::Command::new("xdg-open")
+            .arg(&parent)
+            .spawn()
+            .map_err(|e| format!("Failed to reveal in file manager: {}", e))?;
+    }
+
     Ok(())
 }
 
