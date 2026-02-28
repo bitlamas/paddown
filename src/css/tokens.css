@@ -55,6 +55,13 @@
   --color-tab-border:      #e2e6ea;
   --color-tab-close-hover: rgba(0, 0, 0, 0.08);
 
+  /* Sidebar */
+  --color-sidebar-bg:          #f7f8fa;
+  --color-sidebar-item-hover:  rgba(0, 0, 0, 0.04);
+  --color-sidebar-item-active: rgba(0, 0, 0, 0.08);
+  --color-sidebar-error:       #dc2626;
+  --sidebar-width:             240px;
+
   /* Syntax highlighting tokens — from reference chat interface inline styles */
   --tok-keyword:  rgb(129, 0, 194);   /* purple: if, return, def */
   --tok-number:   rgb(0, 128, 128);   /* teal: 1, 2, 10 */

@@ -13,7 +13,11 @@ window.Paddown.settings = (() => {
     recentFiles: [],
     wordWrap: true,
     startupMode: 'welcome',
-    openTabs: []
+    openTabs: [],
+    sidebarVisible: false,
+    sidebarProjects: [],
+    sidebarExpanded: {},
+    sidebarFileExtensions: ['md', 'markdown']
   };
 
   const MAX_RECENT = 10;
@@ -98,7 +102,7 @@ window.Paddown.settings = (() => {
   // ─── Apply Settings to UI ─────────────────────────────────
 
   function applyToUI() {
-    const { views, toolbar } = window.Paddown;
+    const { views, toolbar, sidebar } = window.Paddown;
 
     // View mode
     if (views && current.viewMode) {
@@ -108,6 +112,11 @@ window.Paddown.settings = (() => {
     // Toolbar visibility
     if (toolbar && current.showToolbar === false) {
       toolbar.hide();
+    }
+
+    // Sidebar visibility
+    if (sidebar && current.sidebarVisible) {
+      sidebar.show();
     }
   }
 

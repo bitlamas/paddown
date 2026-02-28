@@ -4,7 +4,7 @@
  * wires menu/toolbar actions, and handles window events.
  */
 document.addEventListener('DOMContentLoaded', async () => {
-  const { renderer, editor, fileIO, tabs, views, menus, contextMenu, find, toolbar, settings, exportHtml, updater, welcome } = window.Paddown;
+  const { renderer, editor, fileIO, tabs, views, menus, contextMenu, find, toolbar, settings, exportHtml, updater, welcome, sidebar } = window.Paddown;
 
   // ─── Initialize Modules ─────────────────────────────────────
 
@@ -21,11 +21,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   tabs.init((tab) => {
     const ta = tabs.getActiveTextarea();
     editor.attachToTextarea(ta);
+    if (sidebar) sidebar.updateActiveHighlight();
   });
+
+  // Initialize sidebar (needs settings loaded first)
+  sidebar.init();
 
   // Apply saved settings to UI
   if (fileIO.isDesktop()) {
     settings.applyToUI();
+  }
+
+  // Load sidebar projects from settings
+  if (fileIO.isDesktop()) {
+    sidebar.loadFromSettings();
   }
 
   // Check for updates (non-blocking, delayed)
@@ -48,6 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (tabs.isTabBlankUntitled(active)) {
         tabs.loadIntoTab(active.id, result.content, result.filePath, result.lineEnding);
         editor.render();
+        sidebar.updateActiveHighlight();
         return;
       }
 
@@ -132,6 +142,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     viewEditor:  () => { views.setMode('editor-only'); if (fileIO.isDesktop()) settings.set('viewMode', 'editor-only'); },
     viewPreview: () => { views.setMode('preview-only'); if (fileIO.isDesktop()) settings.set('viewMode', 'preview-only'); },
     toggleToolbar: () => { toolbar.toggle(); if (fileIO.isDesktop()) settings.set('showToolbar', toolbar.isVisible()); },
+    toggleSidebar: () => { sidebar.toggle(); },
+    addProjectFolder: () => { sidebar.addProject(); },
     zoomIn:    () => { document.body.style.zoom = (parseFloat(document.body.style.zoom || 1) + 0.1); },
     zoomOut:   () => { document.body.style.zoom = (parseFloat(document.body.style.zoom || 1) - 0.1); },
     zoomReset: () => { document.body.style.zoom = 1; },
@@ -231,6 +243,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (ctrl && !e.shiftKey && e.key === 'i') { e.preventDefault(); actionMap.italic(); }
     if (ctrl && !e.shiftKey && e.key === 'k') { e.preventDefault(); actionMap.link(); }
     if (ctrl && !e.shiftKey && e.key === '`') { e.preventDefault(); actionMap.inlineCode(); }
+    if (ctrl && e.shiftKey && e.key === 'E')    { e.preventDefault(); actionMap.toggleSidebar(); }
     if (ctrl && !e.shiftKey && e.key === '\\') { e.preventDefault(); views.cycle(); }
     if (ctrl && !e.shiftKey && e.key === '=') { e.preventDefault(); actionMap.zoomIn(); }
     if (ctrl && !e.shiftKey && e.key === '-') { e.preventDefault(); actionMap.zoomOut(); }
@@ -418,6 +431,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     appWindow.onCloseRequested(async (event) => {
       event.preventDefault();
+
+      // Stop all filesystem watchers
+      sidebar.stopAllWatching();
 
       // Save open tabs for session restore
       if (settings.get('startupMode') === 'restore') {

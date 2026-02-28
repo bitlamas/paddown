@@ -28,7 +28,16 @@
   <!-- ===== WORKSPACE ===== -->
   <div id="workspace" class="mode-split">
 
-    <!-- Left: editor pane — textareas created dynamically by tabs.js -->
+    <!-- Left: project sidebar -->
+    <div id="sidebar">
+      <div class="sidebar-header">
+        <span class="sidebar-title">PROJECTS</span>
+        <button class="sidebar-add" title="Add Project Folder">+</button>
+      </div>
+      <div class="sidebar-tree"></div>
+    </div>
+
+    <!-- Editor pane — textareas created dynamically by tabs.js -->
     <div id="editor-pane"></div>
 
     <!-- Right: live preview -->
@@ -69,6 +78,7 @@
   <script src="js/export-html.js"></script>
   <script src="js/settings.js"></script>
   <script src="js/settings-ui.js"></script>
+  <script src="js/sidebar.js"></script>
   <script src="js/welcome.js"></script>
   <script src="js/updater.js"></script>
   <script src="js/app.js"></script>

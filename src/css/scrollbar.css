@@ -1,30 +1,35 @@
 /* =====================================================
    SCROLLBAR STYLING — thin scrollbar
    ===================================================== */
-#editor::-webkit-scrollbar,
-#preview-pane::-webkit-scrollbar {
+#editor-pane .tab-textarea::-webkit-scrollbar,
+#preview-pane::-webkit-scrollbar,
+.sidebar-tree::-webkit-scrollbar {
   width: 6px;
 }
 
-#editor::-webkit-scrollbar-track,
-#preview-pane::-webkit-scrollbar-track {
+#editor-pane .tab-textarea::-webkit-scrollbar-track,
+#preview-pane::-webkit-scrollbar-track,
+.sidebar-tree::-webkit-scrollbar-track {
   background: transparent;
 }
 
-#editor::-webkit-scrollbar-thumb,
-#preview-pane::-webkit-scrollbar-thumb {
+#editor-pane .tab-textarea::-webkit-scrollbar-thumb,
+#preview-pane::-webkit-scrollbar-thumb,
+.sidebar-tree::-webkit-scrollbar-thumb {
   background: var(--color-scrollbar-thumb);
   border-radius: 3px;
 }
 
-#editor::-webkit-scrollbar-thumb:hover,
-#preview-pane::-webkit-scrollbar-thumb:hover {
+#editor-pane .tab-textarea::-webkit-scrollbar-thumb:hover,
+#preview-pane::-webkit-scrollbar-thumb:hover,
+.sidebar-tree::-webkit-scrollbar-thumb:hover {
   background: var(--color-scrollbar-thumb-hover);
 }
 
 /* Firefox */
-#editor,
-#preview-pane {
+#editor-pane .tab-textarea,
+#preview-pane,
+.sidebar-tree {
   scrollbar-width: thin;
   scrollbar-color: var(--color-scrollbar-thumb) transparent;
 }
