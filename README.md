@@ -2,6 +2,8 @@
 
 A lightweight Markdown notepad with a clean chat-style preview.
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 ## Features
 
 - **Split-pane editor** — write Markdown on the left, see the rendered preview on the right
@@ -13,6 +15,7 @@ A lightweight Markdown notepad with a clean chat-style preview.
 - **Right-click context menu** with formatting actions
 - **File drag-and-drop** — drop `.md` / `.txt` files to open
 - **Export to standalone HTML** with all styles inlined
+- **Settings page** — choose startup behavior (restore tabs, blank, welcome)
 - **Bidirectional scroll sync** — editor and preview stay in lockstep
 - **Auto-update checker** via GitHub Releases
 - **Portable mode** — drop a settings file next to the exe, no install needed
@@ -64,3 +67,7 @@ cargo tauri build
 Outputs:
 - **Portable exe** — `src-tauri/target/release/paddown.exe`
 - **NSIS installer** — `src-tauri/target/release/bundle/nsis/Paddown_<version>_x64-setup.exe`
+
+## License
+
+[MIT](LICENSE)

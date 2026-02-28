@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Markdown notepad with professional chat interface styling"
 authors = ["Paddown"]
 edition = "2021"
+license = "MIT"
 
 [lib]
 name = "paddown_lib"
