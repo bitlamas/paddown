@@ -263,6 +263,70 @@ fn read_file_base64(path: String, base_dir: String) -> Result<String, String> {
     Ok(result)
 }
 
+// ─── File Modification Time ─────────────────────────────────
+
+#[tauri::command]
+fn get_file_mtime(path: String) -> Result<u64, String> {
+    let metadata = std::fs::metadata(&path)
+        .map_err(|e| format!("Cannot read metadata for {}: {}", path, e))?;
+    let modified = metadata.modified()
+        .map_err(|e| format!("Cannot get mtime for {}: {}", path, e))?;
+    let duration = modified.duration_since(std::time::UNIX_EPOCH)
+        .map_err(|e| format!("Time error: {}", e))?;
+    Ok(duration.as_secs())
+}
+
+// ─── Recovery Directory ─────────────────────────────────────
+
+fn recovery_dir_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    let dir = app.path().app_data_dir()
+        .map_err(|e| format!("Cannot resolve app data dir: {}", e))?;
+    Ok(dir.join("recovery"))
+}
+
+#[tauri::command]
+fn get_recovery_dir(app: tauri::AppHandle) -> Result<String, String> {
+    let recovery_dir = recovery_dir_path(&app)?;
+    if !recovery_dir.exists() {
+        std::fs::create_dir_all(&recovery_dir)
+            .map_err(|e| format!("Cannot create recovery dir: {}", e))?;
+    }
+    Ok(recovery_dir.to_string_lossy().into_owned())
+}
+
+#[tauri::command]
+fn list_recovery_files(app: tauri::AppHandle) -> Result<Vec<String>, String> {
+    let recovery_dir = recovery_dir_path(&app)?;
+    if !recovery_dir.exists() {
+        return Ok(Vec::new());
+    }
+    let mut files = Vec::new();
+    for entry in std::fs::read_dir(&recovery_dir)
+        .map_err(|e| format!("Cannot read recovery dir: {}", e))?
+        .flatten()
+    {
+        let path = entry.path();
+        if path.extension().map(|e| e == "json").unwrap_or(false) && path.is_file() {
+            files.push(path.to_string_lossy().into_owned());
+        }
+    }
+    Ok(files)
+}
+
+#[tauri::command]
+fn delete_recovery_file(app: tauri::AppHandle, filename: String) -> Result<(), String> {
+    // Reject path separators to prevent directory traversal
+    if filename.contains('/') || filename.contains('\\') || filename.contains("..") {
+        return Err("Invalid filename".to_string());
+    }
+    let path = recovery_dir_path(&app)?.join(&filename);
+    if path.is_file() {
+        std::fs::remove_file(&path)
+            .map_err(|e| format!("Failed to delete {}: {}", path.display(), e))?;
+    }
+    Ok(())
+}
+
 // ─── Open URL in Default Browser ────────────────────────────
 
 #[tauri::command]
@@ -539,6 +603,10 @@ pub fn run() {
             check_for_updates,
             get_app_version,
             read_file_base64,
+            get_file_mtime,
+            get_recovery_dir,
+            list_recovery_files,
+            delete_recovery_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Paddown");

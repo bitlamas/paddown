@@ -71,4 +71,81 @@
   --tok-punct:    rgb(43, 48, 59);    /* dark: ( ) { } */
   --tok-fn:       rgb(0, 92, 197);    /* blue: function names */
   --tok-tmpl:     rgb(0, 92, 197);    /* blue: template literals */
+
+  /* Update bar (blue) */
+  --color-update-bar-bg:     #eff6ff;
+  --color-update-bar-border: #bfdbfe;
+  --color-update-link:       #2563eb;
+  --color-update-link-hover: #1d4ed8;
+
+  /* External modification bar (amber) */
+  --color-mod-bar-bg:        #fffbeb;
+  --color-mod-bar-border:    #fde68a;
+  --color-mod-bar-btn-bg:    #fef3c7;
+  --color-mod-bar-btn-hover: #fde68a;
+}
+
+/* =====================================================
+   DARK MODE TOKENS
+   Claude dark palette + One Dark syntax tokens
+   ===================================================== */
+[data-theme="dark"] {
+  --color-text-primary:   #e2e4e9;
+  --color-text-secondary: #9ba1af;
+
+  --color-border-100: #2c3040;
+  --color-border-200: #3a3f50;
+  --color-border-300: #525868;
+
+  --color-danger: #f87171;
+
+  --color-code-bg:     #1e2028;
+  --color-code-border: #2c3040;
+
+  --color-app-bg:     #16181f;
+  --color-surface:    #1c1e26;
+  --color-preview-bg: #1a1c22;
+  --color-about-bg:   #222430;
+
+  --color-code-inline-bg: rgba(255, 255, 255, 0.06);
+  --color-link-decoration: rgba(226, 228, 233, 0.4);
+
+  --color-table-border-head: rgba(82, 88, 104, 0.6);
+  --color-table-border-cell: rgba(82, 88, 104, 0.3);
+
+  --color-scrollbar-thumb:       rgba(82, 88, 104, 0.5);
+  --color-scrollbar-thumb-hover: rgba(82, 88, 104, 0.8);
+
+  --color-tab-bg:          transparent;
+  --color-tab-active-bg:   #1c1e26;
+  --color-tab-hover-bg:    rgba(255, 255, 255, 0.04);
+  --color-tab-border:      #2c3040;
+  --color-tab-close-hover: rgba(255, 255, 255, 0.08);
+
+  --color-sidebar-bg:          #191b22;
+  --color-sidebar-item-hover:  rgba(255, 255, 255, 0.04);
+  --color-sidebar-item-active: rgba(255, 255, 255, 0.08);
+  --color-sidebar-error:       #f87171;
+
+  /* Update bar (blue) */
+  --color-update-bar-bg:     #1e293b;
+  --color-update-bar-border: #334155;
+  --color-update-link:       #60a5fa;
+  --color-update-link-hover: #93bbfd;
+
+  /* External modification bar (amber) */
+  --color-mod-bar-bg:     #292211;
+  --color-mod-bar-border: #44371a;
+  --color-mod-bar-btn-bg: #3d3015;
+  --color-mod-bar-btn-hover: #544222;
+
+  /* One Dark syntax tokens */
+  --tok-keyword:  #c678dd;
+  --tok-number:   #d19a66;
+  --tok-comment:  #5c6370;
+  --tok-string:   #98c379;
+  --tok-operator: #abb2bf;
+  --tok-punct:    #abb2bf;
+  --tok-fn:       #61aeee;
+  --tok-tmpl:     #61aeee;
 }

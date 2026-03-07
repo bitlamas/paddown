@@ -64,7 +64,47 @@ window.Paddown.settingsUI = (() => {
       section.appendChild(row);
     });
 
-    card.append(header, closeBtn, section);
+    // Section: Theme
+    const themeSection = document.createElement('div');
+    themeSection.className = 'settings-section';
+    themeSection.style.marginTop = '1rem';
+
+    const themeLabel = document.createElement('div');
+    themeLabel.className = 'settings-section-label';
+    themeLabel.textContent = 'Theme';
+    themeSection.appendChild(themeLabel);
+
+    const currentTheme = settings.get('theme') || 'light';
+    const themeOptions = [
+      { value: 'light', label: 'Light' },
+      { value: 'dark', label: 'Dark' },
+      { value: 'system', label: 'System' }
+    ];
+
+    themeOptions.forEach(opt => {
+      const row = document.createElement('label');
+      row.className = 'settings-radio';
+
+      const input = document.createElement('input');
+      input.type = 'radio';
+      input.name = 'theme';
+      input.value = opt.value;
+      input.checked = opt.value === currentTheme;
+
+      input.addEventListener('change', () => {
+        if (input.checked) {
+          settings.set('theme', opt.value);
+          settings.applyTheme(opt.value);
+        }
+      });
+
+      const text = document.createTextNode(opt.label);
+      row.appendChild(input);
+      row.appendChild(text);
+      themeSection.appendChild(row);
+    });
+
+    card.append(header, closeBtn, section, themeSection);
     overlay.appendChild(card);
     document.body.appendChild(overlay);
 

@@ -406,23 +406,22 @@ window.Paddown.sidebar = (() => {
     }
 
     try {
-      const rawContent = await invoke('read_file', { path: filePath });
-      const lineEnding = fileIO.detectLineEnding(rawContent);
-      const content = fileIO.normalizeForEditor(rawContent);
+      const result = await fileIO.readFileContent(filePath);
 
       if (fileIO.isDesktop()) settings.addRecentFile(filePath);
 
       // Load into blank untitled tab if available
       const active = tabs.getActiveTab();
       if (tabs.isTabBlankUntitled(active)) {
-        tabs.loadIntoTab(active.id, content, filePath, lineEnding);
+        tabs.loadIntoTab(active.id, result.content, filePath, result.lineEnding, result.mtime);
         editor.render();
       } else {
         tabs.createTab({
           title: filePath.split(/[/\\]/).pop(),
           filePath,
-          content,
-          lineEnding
+          content: result.content,
+          lineEnding: result.lineEnding,
+          lastModified: result.mtime
         });
       }
 

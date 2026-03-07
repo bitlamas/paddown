@@ -94,7 +94,7 @@ ${body}
     const defaultName = baseName + '.html';
 
     try {
-      const path = await invoke('show_export_html_dialog', { default_name: defaultName });
+      const path = await invoke('show_export_html_dialog', { defaultName });
       if (!path) return;
 
       const html = buildHtml(baseName);

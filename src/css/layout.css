@@ -641,8 +641,8 @@ body {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: var(--color-update-bar-bg, #eff6ff);
-  border-bottom: 1px solid var(--color-update-bar-border, #bfdbfe);
+  background: var(--color-update-bar-bg);
+  border-bottom: 1px solid var(--color-update-bar-border);
   padding: 0.375rem 1.25rem;
   font-size: 0.8rem;
   color: var(--color-text-primary);
@@ -650,14 +650,14 @@ body {
 }
 
 #update-bar a {
-  color: var(--color-update-link, #2563eb);
+  color: var(--color-update-link);
   text-decoration: underline;
   cursor: pointer;
   font-weight: 500;
 }
 
 #update-bar a:hover {
-  color: var(--color-update-link-hover, #1d4ed8);
+  color: var(--color-update-link-hover);
 }
 
 #update-bar button {
@@ -761,6 +761,17 @@ body {
   margin-top: 0.25rem;
 }
 
+#about-card .about-github {
+  display: inline-flex;
+  color: var(--color-text-secondary);
+  margin-top: 0.5rem;
+  transition: color 0.15s;
+}
+
+#about-card .about-github:hover {
+  color: var(--color-text-primary);
+}
+
 .about-close {
   position: absolute;
   top: 0.5rem;
@@ -855,4 +866,111 @@ body {
 .settings-radio input[type="radio"] {
   margin: 0;
   accent-color: var(--color-text-primary);
+}
+
+/* =====================================================
+   EXTERNAL MODIFICATION BAR
+   ===================================================== */
+#external-mod-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--color-mod-bar-bg);
+  border-bottom: 1px solid var(--color-mod-bar-border);
+  padding: 0.375rem 1.25rem;
+  font-size: 0.8rem;
+  color: var(--color-text-primary);
+  flex-shrink: 0;
+}
+
+#external-mod-bar button {
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--color-mod-bar-border);
+  border-radius: 3px;
+  background: var(--color-mod-bar-btn-bg);
+  color: var(--color-text-primary);
+  font-size: 0.75rem;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+#external-mod-bar button:hover {
+  background: var(--color-mod-bar-btn-hover);
+}
+
+#external-mod-bar .mod-dismiss {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+  padding: 0 0.25rem;
+  line-height: 1;
+}
+
+#external-mod-bar .mod-dismiss:hover {
+  color: var(--color-text-primary);
+}
+
+/* =====================================================
+   PRINT STYLES
+   ===================================================== */
+@media print {
+  :root {
+    --color-text-primary:   #14181f;
+    --color-text-secondary: #5a6275;
+    --color-code-bg:        #f6f8fa;
+    --color-code-border:    #e2e6ea;
+    --color-code-inline-bg: rgba(0, 0, 0, 0.04);
+    --color-danger:         #cf3a48;
+    --color-surface:        #ffffff;
+    --color-preview-bg:     #ffffff;
+    --color-border-100:     #eaedf0;
+    --color-border-200:     #d6dbe2;
+    --color-border-300:     #b0b8c4;
+    --color-link-decoration: rgba(20, 24, 31, 0.4);
+    --color-table-border-head: rgba(176, 184, 196, 0.6);
+    --color-table-border-cell: rgba(176, 184, 196, 0.3);
+    --tok-keyword:  rgb(129, 0, 194);
+    --tok-number:   rgb(0, 128, 128);
+    --tok-comment:  rgb(110, 118, 135);
+    --tok-string:   rgb(3, 106, 58);
+    --tok-operator: rgb(43, 48, 59);
+    --tok-punct:    rgb(43, 48, 59);
+    --tok-fn:       rgb(0, 92, 197);
+    --tok-tmpl:     rgb(0, 92, 197);
+  }
+
+  #menu-bar, #tab-bar, #toolbar, #find-bar,
+  #editor-pane, #status-bar, #sidebar,
+  #update-bar, #external-mod-bar,
+  #drop-overlay, #about-overlay, #settings-overlay {
+    display: none !important;
+  }
+
+  html, body {
+    height: auto;
+    overflow: visible;
+  }
+
+  body {
+    background: #ffffff;
+    zoom: 1 !important;
+  }
+
+  #workspace {
+    display: block;
+    overflow: visible;
+  }
+
+  #preview-pane {
+    overflow: visible;
+    background: #ffffff;
+  }
+
+  #preview-inner {
+    max-width: none;
+    padding: 0;
+  }
 }

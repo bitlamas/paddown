@@ -38,6 +38,10 @@ window.Paddown.fileIO = (() => {
 
   // ─── File Operations ────────────────────────────────────────
 
+  async function getMtime(path) {
+    try { return await invoke('get_file_mtime', { path }); } catch (_) { return null; }
+  }
+
   async function openFile() {
     if (!isDesktop()) return null;
 
@@ -47,36 +51,47 @@ window.Paddown.fileIO = (() => {
     const rawContent = await invoke('read_file', { path: filePath });
     const lineEnding = detectLineEnding(rawContent);
     const content = normalizeForEditor(rawContent);
+    const mtime = await getMtime(filePath);
 
-    return { filePath, content, lineEnding };
+    return { filePath, content, lineEnding, mtime };
   }
 
   async function saveFile(content, currentPath, lineEnding) {
     if (!isDesktop()) return null;
 
     const path = currentPath || await invoke('show_save_dialog', {
-      default_name: 'Untitled.md'
+      defaultName: 'Untitled.md'
     });
     if (!path) return null;
 
     const finalContent = denormalizeForSave(content, lineEnding);
     await invoke('write_file', { path, contents: finalContent });
+    const mtime = await getMtime(path);
 
-    return path;
+    return { path, mtime };
   }
 
   async function saveFileAs(content, lineEnding, currentName) {
     if (!isDesktop()) return null;
 
     const path = await invoke('show_save_dialog', {
-      default_name: currentName || 'Untitled.md'
+      defaultName: currentName || 'Untitled.md'
     });
     if (!path) return null;
 
     const finalContent = denormalizeForSave(content, lineEnding);
     await invoke('write_file', { path, contents: finalContent });
+    const mtime = await getMtime(path);
 
-    return path;
+    return { path, mtime };
+  }
+
+  async function readFileContent(filePath) {
+    const rawContent = await invoke('read_file', { path: filePath });
+    const lineEnding = detectLineEnding(rawContent);
+    const content = normalizeForEditor(rawContent);
+    const mtime = await getMtime(filePath);
+    return { content, lineEnding, mtime };
   }
 
   return {
@@ -86,6 +101,8 @@ window.Paddown.fileIO = (() => {
     denormalizeForSave,
     openFile,
     saveFile,
-    saveFileAs
+    saveFileAs,
+    readFileContent,
+    getMtime
   };
 })();

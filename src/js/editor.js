@@ -215,6 +215,70 @@ window.Paddown.editor = (() => {
     clearSyncFlag();
   }
 
+  // ─── External Modification Detection ──────────────────────
+
+  async function checkExternalModification() {
+    const { tabs, fileIO } = window.Paddown;
+    const tab = tabs.getActiveTab();
+    if (!tab || !tab.filePath || !tab.lastModified) return;
+    if (!fileIO.isDesktop()) return;
+    if (document.getElementById('external-mod-bar')) return;
+
+    try {
+      const mtime = await fileIO.getMtime(tab.filePath);
+      // Guard: tab may have changed during the async call
+      if (tabs.getActiveTab() !== tab) return;
+      if (mtime && mtime > tab.lastModified) {
+        showExternalModBar(tab);
+      }
+    } catch (_) {}
+  }
+
+  function showExternalModBar(tab) {
+    if (document.getElementById('external-mod-bar')) return;
+
+    const bar = document.createElement('div');
+    bar.id = 'external-mod-bar';
+    const safeTitle = window.Paddown.utils.escapeHtml(tab.title);
+    bar.innerHTML =
+      `<span>File "${safeTitle}" was modified externally.</span>` +
+      `<button id="mod-reload">Reload</button>` +
+      `<button class="mod-dismiss" title="Dismiss">\u00D7</button>`;
+
+    // Insert before workspace
+    const workspace = document.getElementById('workspace');
+    workspace.parentNode.insertBefore(bar, workspace);
+
+    document.getElementById('mod-reload').addEventListener('click', async () => {
+      await reloadTabFromDisk(tab);
+      bar.remove();
+    });
+
+    bar.querySelector('.mod-dismiss').addEventListener('click', () => {
+      // Update lastModified to suppress repeated prompts
+      window.Paddown.fileIO.getMtime(tab.filePath).then(mtime => {
+        if (mtime) tab.lastModified = mtime;
+      }).catch(() => {});
+      bar.remove();
+    });
+  }
+
+  async function reloadTabFromDisk(tab) {
+    const { tabs, fileIO } = window.Paddown;
+    try {
+      const result = await fileIO.readFileContent(tab.filePath);
+      const ta = tabs.getActiveTextarea();
+      if (!ta) return;
+      tab.savedContent = result.content;
+      tab.lineEnding = result.lineEnding;
+      tab.lastModified = result.mtime;
+      ta.value = result.content;
+      render();
+    } catch (err) {
+      console.error('Reload failed:', err);
+    }
+  }
+
   function init() {
     previewEl    = document.getElementById('preview');
     statChars    = document.getElementById('stat-chars');
@@ -244,5 +308,5 @@ window.Paddown.editor = (() => {
     }
   }
 
-  return { init, render, attachToTextarea };
+  return { init, render, attachToTextarea, checkExternalModification };
 })();

@@ -21,6 +21,7 @@ window.Paddown.tabs = (() => {
       filePath: opts.filePath || null,
       savedContent: opts.content || '',
       lineEnding: opts.lineEnding || '\r\n',
+      lastModified: opts.lastModified || null,
       scrollTop: 0,
       previewScrollTop: 0,
       cursorStart: 0,
@@ -219,7 +220,7 @@ window.Paddown.tabs = (() => {
 
   // ─── File State Helpers ─────────────────────────────────────
 
-  function markTabSaved(tabId, filePath) {
+  function markTabSaved(tabId, filePath, mtime) {
     const tab = tabs.find(t => t.id === tabId);
     const ta = getTextarea(tabId);
     if (!tab || !ta) return;
@@ -228,12 +229,13 @@ window.Paddown.tabs = (() => {
     tab.title = filePath.split(/[/\\]/).pop();
     tab.savedContent = ta.value;
     tab.isNew = false;
+    if (mtime != null) tab.lastModified = mtime;
 
     renderTabBar();
     updateWindowTitle();
   }
 
-  function loadIntoTab(tabId, content, filePath, lineEnding) {
+  function loadIntoTab(tabId, content, filePath, lineEnding, mtime) {
     const tab = tabs.find(t => t.id === tabId);
     const ta = getTextarea(tabId);
     if (!tab || !ta) return;
@@ -243,6 +245,7 @@ window.Paddown.tabs = (() => {
     tab.savedContent = content;
     tab.lineEnding = lineEnding || '\r\n';
     tab.isNew = !filePath;
+    tab.lastModified = mtime || null;
 
     ta.value = content;
     ta.setSelectionRange(0, 0);

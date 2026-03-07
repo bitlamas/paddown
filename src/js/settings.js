@@ -99,10 +99,46 @@ window.Paddown.settings = (() => {
     save();
   }
 
+  // ─── Theme ────────────────────────────────────────────────
+
+  let systemDarkMQ = null;
+
+  function applyTheme(theme) {
+    // Clean up previous system listener
+    if (systemDarkMQ) {
+      systemDarkMQ.removeEventListener('change', onSystemThemeChange);
+    }
+
+    if (theme === 'system') {
+      systemDarkMQ = window.matchMedia('(prefers-color-scheme: dark)');
+      systemDarkMQ.addEventListener('change', onSystemThemeChange);
+      if (systemDarkMQ.matches) {
+        document.documentElement.dataset.theme = 'dark';
+      } else {
+        delete document.documentElement.dataset.theme;
+      }
+    } else if (theme === 'dark') {
+      document.documentElement.dataset.theme = 'dark';
+    } else {
+      delete document.documentElement.dataset.theme;
+    }
+  }
+
+  function onSystemThemeChange(e) {
+    if (e.matches) {
+      document.documentElement.dataset.theme = 'dark';
+    } else {
+      delete document.documentElement.dataset.theme;
+    }
+  }
+
   // ─── Apply Settings to UI ─────────────────────────────────
 
   function applyToUI() {
     const { views, toolbar, sidebar } = window.Paddown;
+
+    // Theme
+    applyTheme(current.theme || 'light');
 
     // View mode
     if (views && current.viewMode) {
@@ -127,6 +163,6 @@ window.Paddown.settings = (() => {
   return {
     load, save, get, set, isPortable, isFirstRun,
     getRecentFiles, addRecentFile, clearRecentFiles,
-    applyToUI
+    applyToUI, applyTheme
   };
 })();

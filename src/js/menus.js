@@ -23,6 +23,7 @@ window.Paddown.menus = (() => {
         { label: 'Save', shortcut: 'Ctrl+S', action: 'save' },
         { label: 'Save As\u2026', shortcut: 'Ctrl+Shift+S', action: 'saveAs' },
         { label: 'Export as HTML\u2026', action: 'exportHtml' },
+        { label: 'Export as PDF\u2026', action: 'exportPdf' },
         { type: 'separator' },
         { label: 'Add Project Folder\u2026', action: 'addProjectFolder' },
         { type: 'separator' },

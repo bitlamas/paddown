@@ -28,9 +28,7 @@ window.Paddown.updater = (() => {
 
     document.getElementById('update-link').addEventListener('click', (e) => {
       e.preventDefault();
-      if (url && window.__TAURI__?.shell?.open) {
-        window.__TAURI__.shell.open(url);
-      }
+      if (url) invoke('open_url', { url }).catch(() => {});
     });
 
     document.getElementById('update-dismiss').addEventListener('click', () => {
@@ -41,9 +39,7 @@ window.Paddown.updater = (() => {
   async function check() {
     try {
       const currentVersion = await invoke('get_app_version');
-      const result = await invoke('check_for_updates', {
-        current_version: currentVersion
-      });
+      const result = await invoke('check_for_updates', { currentVersion });
       if (result) {
         showUpdateBar(result.version, result.url);
       }

@@ -4,7 +4,7 @@
  * wires menu/toolbar actions, and handles window events.
  */
 document.addEventListener('DOMContentLoaded', async () => {
-  const { renderer, editor, fileIO, tabs, views, menus, contextMenu, find, toolbar, settings, exportHtml, updater, welcome, sidebar } = window.Paddown;
+  const { renderer, editor, fileIO, tabs, views, menus, contextMenu, find, toolbar, settings, exportHtml, updater, recovery, welcome, sidebar } = window.Paddown;
 
   // ─── Initialize Modules ─────────────────────────────────────
 
@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const ta = tabs.getActiveTextarea();
     editor.attachToTextarea(ta);
     if (sidebar) sidebar.updateActiveHighlight();
+    if (fileIO.isDesktop()) editor.checkExternalModification();
   });
 
   // Initialize sidebar (needs settings loaded first)
@@ -35,6 +36,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load sidebar projects from settings
   if (fileIO.isDesktop()) {
     sidebar.loadFromSettings();
+  }
+
+  // ─── Crash Recovery Check ──────────────────────────────────
+
+  let recoveryRestored = false;
+  if (fileIO.isDesktop()) {
+    try {
+      const items = await recovery.checkForRecovery();
+      if (items && items.length > 0) {
+        const names = items.map(i => i.title || 'Untitled').join(', ');
+        const ok = confirm(`Paddown found unsaved work from a previous session:\n${names}\n\nRestore these files?`);
+        if (ok) {
+          await recovery.restoreFromRecovery(items);
+          recoveryRestored = true;
+        } else {
+          await recovery.clearRecovery();
+        }
+      }
+    } catch (_) {}
+    recovery.init();
   }
 
   // Check for updates (non-blocking, delayed)
@@ -55,7 +76,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const active = tabs.getActiveTab();
       if (tabs.isTabBlankUntitled(active)) {
-        tabs.loadIntoTab(active.id, result.content, result.filePath, result.lineEnding);
+        tabs.loadIntoTab(active.id, result.content, result.filePath, result.lineEnding, result.mtime);
         editor.render();
         sidebar.updateActiveHighlight();
         return;
@@ -65,7 +86,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         title: result.filePath.split(/[/\\]/).pop(),
         filePath: result.filePath,
         content: result.content,
-        lineEnding: result.lineEnding
+        lineEnding: result.lineEnding,
+        lastModified: result.mtime
       });
     } catch (err) {
       console.error('Open failed:', err);
@@ -78,10 +100,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!tab) return;
     try {
       const ta = tabs.getActiveTextarea();
-      const path = await fileIO.saveFile(ta.value, tab.filePath, tab.lineEnding);
-      if (path) {
-        tabs.markTabSaved(tab.id, path);
-        if (fileIO.isDesktop()) settings.addRecentFile(path);
+      const result = await fileIO.saveFile(ta.value, tab.filePath, tab.lineEnding);
+      if (result) {
+        tabs.markTabSaved(tab.id, result.path, result.mtime);
+        if (fileIO.isDesktop()) settings.addRecentFile(result.path);
       }
     } catch (err) {
       console.error('Save failed:', err);
@@ -94,10 +116,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!tab) return;
     try {
       const ta = tabs.getActiveTextarea();
-      const path = await fileIO.saveFileAs(ta.value, tab.lineEnding, tab.title);
-      if (path) {
-        tabs.markTabSaved(tab.id, path);
-        if (fileIO.isDesktop()) settings.addRecentFile(path);
+      const result = await fileIO.saveFileAs(ta.value, tab.lineEnding, tab.title);
+      if (result) {
+        tabs.markTabSaved(tab.id, result.path, result.mtime);
+        if (fileIO.isDesktop()) settings.addRecentFile(result.path);
       }
     } catch (err) {
       console.error('Save As failed:', err);
@@ -120,6 +142,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     save:      () => handleSave(),
     saveAs:    () => handleSaveAs(),
     exportHtml: () => exportHtml.exportToHtml(),
+    exportPdf: () => window.print(),
     closeTab:  () => { const t = tabs.getActiveTab(); if (t) tabs.requestCloseTab(t.id); },
     exit:      () => {
       if (window.__TAURI__?.window?.getCurrentWindow) {
@@ -186,13 +209,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const tagline = document.createElement('p');
       tagline.className = 'about-tagline';
-      tagline.textContent = 'Markdown notepad with professional chat interface styling. Write notes offline, paste with zero formatting surprises.';
+      tagline.textContent = 'Lightweight Markdown editor with chat-style preview.';
+
+      const ghLink = document.createElement('a');
+      ghLink.className = 'about-github';
+      ghLink.href = '#';
+      ghLink.title = 'View on GitHub';
+      ghLink.innerHTML = '<svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>';
+      ghLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        const url = 'https://github.com/bitlamas/paddown';
+        if (window.__TAURI__) {
+          window.__TAURI__.core.invoke('open_url', { url });
+        } else {
+          window.open(url, '_blank');
+        }
+      });
 
       const closeBtn = document.createElement('button');
       closeBtn.className = 'about-close';
       closeBtn.textContent = '\u00D7';
 
-      card.append(logo, title, ver, tagline, closeBtn);
+      card.append(logo, title, ver, tagline, ghLink, closeBtn);
       overlay.appendChild(card);
       document.body.appendChild(overlay);
 
@@ -299,23 +337,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       try {
         // Use file.path if available (Tauri provides it)
         const filePath = file.path || file.name;
-        const rawContent = await window.__TAURI__.core.invoke('read_file', { path: filePath });
-        const lineEnding = fileIO.detectLineEnding(rawContent);
-        const content = fileIO.normalizeForEditor(rawContent);
+        const result = await fileIO.readFileContent(filePath);
 
         const existing = tabs.getAllTabs().find(t => t.filePath === filePath);
         if (existing) { tabs.switchTab(existing.id); continue; }
 
         const active = tabs.getActiveTab();
         if (tabs.isTabBlankUntitled(active)) {
-          tabs.loadIntoTab(active.id, content, filePath, lineEnding);
+          tabs.loadIntoTab(active.id, result.content, filePath, result.lineEnding, result.mtime);
           editor.render();
         } else {
           tabs.createTab({
             title: filePath.split(/[/\\]/).pop(),
             filePath,
-            content,
-            lineEnding
+            content: result.content,
+            lineEnding: result.lineEnding,
+            lastModified: result.mtime
           });
         }
       } catch (err) {
@@ -333,23 +370,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Skip flags
         if (arg.startsWith('-')) continue;
         try {
-          const rawContent = await window.__TAURI__.core.invoke('read_file', { path: arg });
-          const lineEnding = fileIO.detectLineEnding(rawContent);
-          const content = fileIO.normalizeForEditor(rawContent);
           const filePath = arg;
+          const result = await fileIO.readFileContent(filePath);
 
           settings.addRecentFile(filePath);
 
           const active = tabs.getActiveTab();
           if (tabs.isTabBlankUntitled(active)) {
-            tabs.loadIntoTab(active.id, content, filePath, lineEnding);
+            tabs.loadIntoTab(active.id, result.content, filePath, result.lineEnding, result.mtime);
             editor.render();
           } else {
             tabs.createTab({
               title: filePath.split(/[/\\]/).pop(),
               filePath,
-              content,
-              lineEnding
+              content: result.content,
+              lineEnding: result.lineEnding,
+              lastModified: result.mtime
             });
           }
         } catch (err) {
@@ -362,10 +398,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ─── Startup Mode ──────────────────────────────────────────
 
   if (fileIO.isDesktop()) {
-    // Only apply startup mode if no CLI files were opened
+    // Only apply startup mode if no CLI files or recovery were loaded
     const cliOpened = tabs.getAllTabs().some(t => t.filePath);
 
-    if (!cliOpened) {
+    if (!cliOpened && !recoveryRestored) {
       const startupMode = settings.get('startupMode') || 'welcome';
 
       if (startupMode === 'restore') {
@@ -375,19 +411,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         for (const saved of savedTabs) {
           if (!saved.filePath) continue;
           try {
-            const rawContent = await window.__TAURI__.core.invoke('read_file', { path: saved.filePath });
-            const lineEnding = fileIO.detectLineEnding(rawContent);
-            const content = fileIO.normalizeForEditor(rawContent);
+            const result = await fileIO.readFileContent(saved.filePath);
 
             const active = tabs.getActiveTab();
             if (restored === 0 && tabs.isTabBlankUntitled(active)) {
-              tabs.loadIntoTab(active.id, content, saved.filePath, lineEnding);
+              tabs.loadIntoTab(active.id, result.content, saved.filePath, result.lineEnding, result.mtime);
             } else {
               tabs.createTab({
                 title: saved.filePath.split(/[/\\]/).pop(),
                 filePath: saved.filePath,
-                content,
-                lineEnding
+                content: result.content,
+                lineEnding: result.lineEnding,
+                lastModified: result.mtime
               });
             }
 
@@ -424,6 +459,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  // ─── External Modification Check on Focus ─────────────────
+
+  if (fileIO.isDesktop()) {
+    window.addEventListener('focus', () => editor.checkExternalModification());
+  }
+
   // ─── Window Close Handler ─────────────────────────────────
 
   if (fileIO.isDesktop() && window.__TAURI__?.window?.getCurrentWindow) {
@@ -431,6 +472,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     appWindow.onCloseRequested(async (event) => {
       event.preventDefault();
+
+      // Stop autosave and clean recovery files
+      recovery.stopAutosave();
 
       // Stop all filesystem watchers
       sidebar.stopAllWatching();
@@ -455,6 +499,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const dirtyTabs = tabs.getDirtyTabs();
       if (dirtyTabs.length === 0) {
+        await recovery.clearRecovery();
         appWindow.destroy();
         return;
       }
@@ -462,6 +507,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const names = dirtyTabs.map(t => t.title).join(', ');
       const ok = confirm(`You have unsaved changes in: ${names}\n\nClose without saving?`);
       if (ok) {
+        await recovery.clearRecovery();
         appWindow.destroy();
       }
     });
