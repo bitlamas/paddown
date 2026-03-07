@@ -6,9 +6,13 @@ use std::sync::Mutex;
 use tauri::Manager;
 use tauri::Emitter;
 use notify::{Watcher, RecursiveMode, RecommendedWatcher};
+use base64::Engine;
 
 /// Maximum file size we'll read (50MB)
 const MAX_FILE_SIZE: u64 = 50 * 1024 * 1024;
+
+/// Maximum image file size we'll base64-encode (10 MB)
+const MAX_IMAGE_SIZE: u64 = 10 * 1024 * 1024;
 
 // ─── File I/O Commands ───────────────────────────────────────
 
@@ -207,6 +211,56 @@ fn check_for_updates(current_version: String) -> Result<Option<UpdateInfo>, Stri
     } else {
         Ok(None)
     }
+}
+
+// ─── Read Image as Base64 Data URI ──────────────────────────
+
+#[tauri::command]
+fn read_file_base64(path: String, base_dir: String) -> Result<String, String> {
+    let p = Path::new(&path).canonicalize()
+        .map_err(|e| format!("Cannot resolve path {}: {}", path, e))?;
+
+    let base = Path::new(&base_dir).canonicalize()
+        .map_err(|e| format!("Cannot resolve base dir {}: {}", base_dir, e))?;
+
+    if !p.starts_with(&base) {
+        return Err("Path escapes the document directory".to_string());
+    }
+
+    let metadata = std::fs::metadata(&p)
+        .map_err(|e| format!("Cannot read metadata for {}: {}", p.display(), e))?;
+
+    if !metadata.is_file() {
+        return Err(format!("Not a file: {}", p.display()));
+    }
+
+    if metadata.len() > MAX_IMAGE_SIZE {
+        return Err(format!(
+            "Image too large ({:.1} MB, max {} MB)",
+            metadata.len() as f64 / (1024.0 * 1024.0),
+            MAX_IMAGE_SIZE / (1024 * 1024)
+        ));
+    }
+
+    let mime = match p.extension().and_then(|e| e.to_str()).map(|e| e.to_lowercase()).as_deref() {
+        Some("jpg" | "jpeg") => "image/jpeg",
+        Some("png") => "image/png",
+        Some("gif") => "image/gif",
+        Some("svg") => "image/svg+xml",
+        Some("webp") => "image/webp",
+        Some("bmp") => "image/bmp",
+        Some("ico") => "image/x-icon",
+        _ => return Err(format!("Unsupported image format: {}", p.display())),
+    };
+
+    let bytes = std::fs::read(&p)
+        .map_err(|e| format!("Failed to read {}: {}", p.display(), e))?;
+
+    let prefix = format!("data:{};base64,", mime);
+    let mut result = String::with_capacity(prefix.len() + (bytes.len() * 4 / 3) + 4);
+    result.push_str(&prefix);
+    base64::engine::general_purpose::STANDARD.encode_string(&bytes, &mut result);
+    Ok(result)
 }
 
 // ─── Open URL in Default Browser ────────────────────────────
@@ -484,6 +538,7 @@ pub fn run() {
             open_url,
             check_for_updates,
             get_app_version,
+            read_file_base64,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Paddown");

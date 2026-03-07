@@ -10,11 +10,15 @@ window.Paddown.editor = (() => {
   let statChars, statWords, statLines, statEncoding, statCursor;
   let debounceTimer = null;
   let currentTextarea = null;
+  let renderGeneration = 0;
+  const imageCache = new Map();
+  const inflightRequests = new Map();
 
   function render() {
     const ta = window.Paddown.tabs.getActiveTextarea();
     if (!ta) return;
 
+    renderGeneration++;
     const md = ta.value;
     previewEl.innerHTML = marked.parse(md);
 
@@ -25,8 +29,58 @@ window.Paddown.editor = (() => {
       }
     });
 
+    resolveImages();
     updateStatusBar(md);
     window.Paddown.tabs.refreshDirtyState();
+  }
+
+  function resolveImages() {
+    const fileIO = window.Paddown.fileIO;
+    if (!fileIO || !fileIO.isDesktop()) return;
+
+    const tab = window.Paddown.tabs.getActiveTab();
+    if (!tab || !tab.filePath) return;
+
+    const lastSep = Math.max(tab.filePath.lastIndexOf('/'), tab.filePath.lastIndexOf('\\'));
+    if (lastSep < 0) return;
+    const dir = tab.filePath.substring(0, lastSep);
+
+    const imgs = previewEl.querySelectorAll('img');
+    const generation = renderGeneration;
+
+    for (const img of imgs) {
+      const src = img.getAttribute('src');
+      if (!src) continue;
+      if (/^(?:https?|data|file|blob):/i.test(src)) continue;
+
+      const absPath = dir + '/' + decodeURIComponent(src);
+
+      if (imageCache.has(absPath)) {
+        img.src = imageCache.get(absPath);
+        continue;
+      }
+
+      if (!inflightRequests.has(absPath)) {
+        const promise = window.__TAURI__.core.invoke('read_file_base64', { path: absPath, baseDir: dir })
+          .then(dataUri => {
+            imageCache.set(absPath, dataUri);
+            inflightRequests.delete(absPath);
+            return dataUri;
+          })
+          .catch(err => {
+            inflightRequests.delete(absPath);
+            throw err;
+          });
+        inflightRequests.set(absPath, promise);
+      }
+
+      inflightRequests.get(absPath)
+        .then(dataUri => {
+          if (renderGeneration !== generation) return;
+          img.src = dataUri;
+        })
+        .catch(() => {});
+    }
   }
 
   function updateStatusBar(md) {
@@ -140,6 +194,10 @@ window.Paddown.editor = (() => {
       ta.addEventListener('keyup', onCursorChange);
       ta.focus();
     }
+
+    // Clear image cache on tab switch to free memory
+    imageCache.clear();
+    inflightRequests.clear();
 
     // Suppress scroll sync during tab restore to avoid overwriting
     // the saved scroll positions with ratio-computed values

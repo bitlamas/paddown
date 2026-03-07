@@ -2478,8 +2478,9 @@ dependencies = [
 
 [[package]]
 name = "paddown"
-version = "0.2.0-beta.1"
+version = "0.3.0"
 dependencies = [
+ "base64 0.22.1",
  "notify",
  "rfd",
  "serde",
