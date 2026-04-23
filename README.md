@@ -4,7 +4,7 @@ A lightweight, project-oriented Markdown editor that renders with proper chat in
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-[Download the latest version](https://github.com/bitlamas/paddown/releases/latest) (all platforms, though I've only tested Windows and Ubuntu via WSL)
+[Download the latest version](https://github.com/bitlamas/paddown/releases/latest) (Windows and Ubuntu 24.04 confirmed working; macOS DMG built but untested)
 
 ![Paddown](screenshot.jpg)
 
@@ -34,8 +34,8 @@ I built this because I keep a lot of Markdown files around for projects using LL
 | Platform | Format |
 |---|---|
 | Windows | NSIS installer + portable exe |
-| Linux | AppImage (not tested) |
-| macOS | DMG (not tested) |
+| Linux | AppImage (tested on Ubuntu 24.04) |
+| macOS | DMG (built, not tested) |
 
 ## Tech Stack
 
