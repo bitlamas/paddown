@@ -148,5 +148,5 @@ window.Paddown.toolbar = (() => {
     });
   }
 
-  return { init, show, hide, toggle, isVisible, getAction, ACTIONS };
+  return { init, show, hide, toggle, isVisible, getAction };
 })();

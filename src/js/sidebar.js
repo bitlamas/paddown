@@ -31,7 +31,7 @@ window.Paddown.sidebar = (() => {
   }
 
   function folderName(p) {
-    return p.replace(/\\/g, '/').split('/').pop() || p;
+    return window.Paddown.utils.basename(p) || p;
   }
 
   // ─── SVG Icons (14x14, currentColor) ──────────────────────
@@ -417,7 +417,7 @@ window.Paddown.sidebar = (() => {
         editor.render();
       } else {
         tabs.createTab({
-          title: filePath.split(/[/\\]/).pop(),
+          title: window.Paddown.utils.basename(filePath),
           filePath,
           content: result.content,
           lineEnding: result.lineEnding,

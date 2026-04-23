@@ -162,5 +162,5 @@ window.Paddown.highlighter = (() => {
     return html;
   }
 
-  return { highlight, RULES, ALIASES };
+  return { highlight };
 })();

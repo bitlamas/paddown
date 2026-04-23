@@ -24,8 +24,10 @@ I built this because I keep a lot of Markdown files around for projects using LL
 - Formatting toolbar
 - Scroll sync
 - HTML and PDF export
-- Autosave with crash recovery
-- Find & replace, syntax highlighting, dark mode, external file change detection, portable mode, auto-update checker
+- Autosave with crash recovery, atomic file writes
+- Single-instance: double-clicking a `.md` file in your file manager opens it in the running window instead of spawning a second one
+- Find & replace with in-editor match highlighting, syntax highlighting, dark mode, external file change detection, portable mode, auto-update checker
+- Keyboard focus rings and `prefers-reduced-motion` support
 
 ## Platforms
 
@@ -54,6 +56,8 @@ cargo install tauri-cli --version "^2"
 cd src-tauri
 cargo tauri build
 ```
+
+On Linux, you'll also need: `libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf`.
 
 ## License
 

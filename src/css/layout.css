@@ -65,7 +65,7 @@ body {
   background: var(--color-surface);
   border: 1px solid var(--color-border-200);
   border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-dropdown);
   padding: 4px 0;
   z-index: 1000;
 }
@@ -151,7 +151,7 @@ body {
   white-space: nowrap;
   min-width: 0;
   max-width: 180px;
-  transition: background 0.1s;
+  transition: background var(--transition-quick);
 }
 
 .tab-item:hover {
@@ -198,7 +198,7 @@ body {
   cursor: pointer;
   flex-shrink: 0;
   opacity: 0;
-  transition: opacity 0.1s, background 0.1s;
+  transition: opacity var(--transition-quick), background var(--transition-quick);
 }
 
 .tab-item:hover .tab-close,
@@ -222,7 +222,7 @@ body {
   color: var(--color-text-secondary);
   font-size: 1.125rem;
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background var(--transition-quick);
 }
 
 .tab-add:hover {
@@ -247,6 +247,7 @@ body {
   border-right: 1px solid var(--color-border-200);
   background: var(--color-surface);
   min-width: 0;
+  position: relative;
 }
 
 #editor-pane .tab-textarea {
@@ -265,10 +266,46 @@ body {
   tab-size: 2;
   white-space: pre-wrap;
   overflow-y: auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* Find-match overlay: a transparent-text mirror of the active textarea
+   with <mark> wrappers around matches. WebView2 doesn't render textarea
+   selection when the textarea isn't focused, so we paint our own. */
+.find-highlight-layer {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 1.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: transparent;
+  background: transparent;
+  tab-size: 2;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  overflow: auto;
+  pointer-events: none;
+  z-index: 0;
+  scrollbar-width: none;
+}
+.find-highlight-layer::-webkit-scrollbar { display: none; }
+
+.find-highlight-layer mark {
+  background: var(--color-find-match);
+  color: transparent;
+  border-radius: 2px;
+  padding: 0;
+}
+
+.find-highlight-layer mark.current {
+  background: var(--color-find-match-current);
 }
 
 #editor-pane .tab-textarea::placeholder {
-  color: var(--color-border-300);
+  color: var(--color-text-tertiary);
 }
 
 /* ---- Preview pane ---- */
@@ -313,7 +350,7 @@ body {
   font-size: 0.75rem;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background var(--transition-quick);
 }
 
 .toolbar-btn:hover {
@@ -414,7 +451,7 @@ body {
   background: var(--color-surface);
   border: 1px solid var(--color-border-200);
   border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-dropdown);
   padding: 4px 0;
   z-index: 2000;
   font-size: 0.8rem;
@@ -473,7 +510,7 @@ body {
   color: var(--color-text-secondary);
   font-size: 1rem;
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background var(--transition-quick);
 }
 
 .sidebar-add:hover {
@@ -598,7 +635,7 @@ body {
   font-size: 0.75rem;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background var(--transition-quick);
 }
 
 .sidebar-empty button:hover {
@@ -624,7 +661,7 @@ body {
   padding: 0 1.25rem;
   gap: 1rem;
   font-size: 0.7rem;
-  color: var(--color-border-300);
+  color: var(--color-text-tertiary);
   flex-shrink: 0;
   user-select: none;
 }
@@ -682,8 +719,8 @@ body {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  color: #ffffff;
+  background: var(--color-modal-scrim);
+  color: var(--color-overlay-text);
   font-size: 1.5rem;
   font-weight: 600;
   align-items: center;
@@ -711,14 +748,14 @@ body {
 }
 
 #about-overlay.visible {
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--color-modal-scrim);
 }
 
 #about-card {
   background: var(--color-about-bg);
   border-radius: 12px;
   padding: 2rem 2.5rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--shadow-modal);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -789,7 +826,7 @@ body {
   justify-content: center;
   border-radius: 4px;
   line-height: 1;
-  transition: background 0.1s, color 0.1s;
+  transition: background var(--transition-quick), color var(--transition-quick);
 }
 
 .about-close:hover {
@@ -812,14 +849,14 @@ body {
 }
 
 #settings-overlay.visible {
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--color-modal-scrim);
 }
 
 #settings-card {
   background: var(--color-surface);
   border-radius: 12px;
   padding: 2rem 2.5rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--shadow-modal);
   max-width: 400px;
   width: 90%;
   position: relative;
@@ -955,7 +992,7 @@ body {
   }
 
   body {
-    background: #ffffff;
+    background: var(--color-surface);
     zoom: 1 !important;
   }
 
@@ -966,11 +1003,40 @@ body {
 
   #preview-pane {
     overflow: visible;
-    background: #ffffff;
+    background: var(--color-preview-bg);
   }
 
   #preview-inner {
     max-width: none;
     padding: 0;
+  }
+}
+
+/* =====================================================
+   ACCESSIBILITY
+   ===================================================== */
+
+/* Visible focus ring on keyboard navigation only — mouse focus stays
+   ringless to preserve the chrome's visual cleanliness. */
+:focus-visible {
+  outline: 2px solid var(--color-text-primary);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+input:focus-visible,
+textarea:focus-visible {
+  outline-offset: -2px;
+}
+
+/* Honor user request for reduced motion — collapses all transitions
+   and animations to a single tick. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

@@ -21,9 +21,11 @@ window.Paddown.settings = (() => {
   };
 
   const MAX_RECENT = 10;
+  const SAVE_DEBOUNCE_MS = 250;
   let current = { ...DEFAULTS };
   let portablePath = null; // set if portable mode detected
   let wasLoadedFromFile = false;
+  let saveTimer = null;
 
   function invoke(cmd, args) {
     return window.__TAURI__.core.invoke(cmd, args);
@@ -52,6 +54,11 @@ window.Paddown.settings = (() => {
   }
 
   async function save() {
+    // Cancel any pending debounced save — we're flushing now.
+    if (saveTimer) {
+      clearTimeout(saveTimer);
+      saveTimer = null;
+    }
     try {
       const contents = JSON.stringify(current, null, 2);
       if (portablePath) {
@@ -68,9 +75,15 @@ window.Paddown.settings = (() => {
     return current[key];
   }
 
+  // Coalesce rapid set() calls (e.g. dragging a sidebar project, typing
+  // in a settings input) so we don't fire a write per keystroke.
   function set(key, value) {
     current[key] = value;
-    save();
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      saveTimer = null;
+      save();
+    }, SAVE_DEBOUNCE_MS);
   }
 
   function isPortable() {

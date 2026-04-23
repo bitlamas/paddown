@@ -96,10 +96,6 @@ window.Paddown.tabs = (() => {
     return ta.value !== tab.savedContent;
   }
 
-  function isAnyTabDirty() {
-    return tabs.some(tab => isTabDirty(tab));
-  }
-
   function getDirtyTabs() {
     return tabs.filter(tab => isTabDirty(tab));
   }
@@ -173,7 +169,7 @@ window.Paddown.tabs = (() => {
     if (!tab) return;
 
     if (isTabDirty(tab)) {
-      const result = confirm(`Save changes to "${tab.title}"?\n\nClick OK to close without saving, or Cancel to go back.`);
+      const result = confirm(`"${tab.title}" has unsaved changes that will be lost.\n\nClose anyway?`);
       if (!result) return;
     }
 
@@ -210,10 +206,6 @@ window.Paddown.tabs = (() => {
     return tabs.find(t => t.id === activeTabId) || null;
   }
 
-  function getTab(tabId) {
-    return tabs.find(t => t.id === tabId) || null;
-  }
-
   function getAllTabs() {
     return tabs;
   }
@@ -226,7 +218,7 @@ window.Paddown.tabs = (() => {
     if (!tab || !ta) return;
 
     tab.filePath = filePath;
-    tab.title = filePath.split(/[/\\]/).pop();
+    tab.title = window.Paddown.utils.basename(filePath);
     tab.savedContent = ta.value;
     tab.isNew = false;
     if (mtime != null) tab.lastModified = mtime;
@@ -241,7 +233,7 @@ window.Paddown.tabs = (() => {
     if (!tab || !ta) return;
 
     tab.filePath = filePath || null;
-    tab.title = filePath ? filePath.split(/[/\\]/).pop() : 'Untitled';
+    tab.title = filePath ? window.Paddown.utils.basename(filePath) : 'Untitled';
     tab.savedContent = content;
     tab.lineEnding = lineEnding || '\r\n';
     tab.isNew = !filePath;
@@ -425,13 +417,11 @@ window.Paddown.tabs = (() => {
     closeTab,
     requestCloseTab,
     getActiveTab,
-    getTab,
     getAllTabs,
     getActiveTextarea,
     markTabSaved,
     loadIntoTab,
     isTabDirty,
-    isAnyTabDirty,
     getDirtyTabs,
     refreshDirtyState,
     updateWindowTitle,

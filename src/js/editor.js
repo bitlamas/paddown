@@ -41,9 +41,8 @@ window.Paddown.editor = (() => {
     const tab = window.Paddown.tabs.getActiveTab();
     if (!tab || !tab.filePath) return;
 
-    const lastSep = Math.max(tab.filePath.lastIndexOf('/'), tab.filePath.lastIndexOf('\\'));
-    if (lastSep < 0) return;
-    const dir = tab.filePath.substring(0, lastSep);
+    const dir = window.Paddown.utils.dirname(tab.filePath);
+    if (!dir) return;
 
     const imgs = previewEl.querySelectorAll('img');
     const generation = renderGeneration;
@@ -53,7 +52,11 @@ window.Paddown.editor = (() => {
       if (!src) continue;
       if (/^(?:https?|data|file|blob):/i.test(src)) continue;
 
-      const absPath = dir + '/' + decodeURIComponent(src);
+      const decoded = decodeURIComponent(src);
+      // Skip absolute paths (Unix /foo, Windows C:\foo or \\server\share)
+      // — pass them straight through; otherwise resolve against doc dir.
+      const isAbsolute = /^(?:[a-zA-Z]:[\\/]|\\\\|\/)/.test(decoded);
+      const absPath = isAbsolute ? decoded : dir + '/' + decoded;
 
       if (imageCache.has(absPath)) {
         img.src = imageCache.get(absPath);
@@ -195,24 +198,27 @@ window.Paddown.editor = (() => {
       ta.focus();
     }
 
-    // Clear image cache on tab switch to free memory
-    imageCache.clear();
-    inflightRequests.clear();
-
     // Suppress scroll sync during tab restore to avoid overwriting
     // the saved scroll positions with ratio-computed values
     scrollSyncSource = 'restore';
 
     render();
 
-    // Restore preview scroll
+    // Restore preview scroll. Defer to a frame after render so the new
+    // innerHTML has had a chance to lay out — assigning scrollTop before
+    // reflow lands on the wrong position for long docs.
     const tab = window.Paddown.tabs.getActiveTab();
     const previewPane = document.getElementById('preview-pane');
     if (tab && previewPane) {
-      previewPane.scrollTop = tab.previewScrollTop;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          previewPane.scrollTop = tab.previewScrollTop;
+          clearSyncFlag();
+        });
+      });
+    } else {
+      clearSyncFlag();
     }
-
-    clearSyncFlag();
   }
 
   // ─── External Modification Detection ──────────────────────

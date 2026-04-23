@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       tabs.createTab({
-        title: result.filePath.split(/[/\\]/).pop(),
+        title: window.Paddown.utils.basename(result.filePath),
         filePath: result.filePath,
         content: result.content,
         lineEnding: result.lineEnding,
@@ -297,6 +297,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const dropOverlay = document.getElementById('drop-overlay');
   let dragCounter = 0;
 
+  function hideDropOverlay() {
+    dragCounter = 0;
+    dropOverlay.classList.remove('visible');
+  }
+
   document.addEventListener('dragenter', (e) => {
     if (e.dataTransfer?.types?.includes('Files')) {
       e.preventDefault();
@@ -307,11 +312,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.addEventListener('dragleave', (e) => {
     dragCounter--;
-    if (dragCounter <= 0) {
-      dragCounter = 0;
-      dropOverlay.classList.remove('visible');
-    }
+    if (dragCounter <= 0) hideDropOverlay();
   });
+
+  // Belt-and-braces: if the WebView swallows the final dragleave (can
+  // happen when the drag is canceled outside the window), the counter
+  // never settles to zero. Reset on window blur and pointer leaving the
+  // document so the overlay can't get stuck.
+  window.addEventListener('blur', hideDropOverlay);
+  document.addEventListener('mouseleave', hideDropOverlay);
 
   document.addEventListener('dragover', (e) => {
     if (e.dataTransfer?.types?.includes('Files')) {
@@ -348,7 +357,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           editor.render();
         } else {
           tabs.createTab({
-            title: filePath.split(/[/\\]/).pop(),
+            title: window.Paddown.utils.basename(filePath),
             filePath,
             content: result.content,
             lineEnding: result.lineEnding,
@@ -361,37 +370,57 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // ─── Open File by Path (shared by CLI args + single-instance) ──
+
+  async function openFileFromPath(filePath) {
+    if (!filePath || filePath.startsWith('-')) return;
+
+    const existing = tabs.getAllTabs().find(t => t.filePath === filePath);
+    if (existing) { tabs.switchTab(existing.id); return; }
+
+    try {
+      const result = await fileIO.readFileContent(filePath);
+      settings.addRecentFile(filePath);
+
+      const active = tabs.getActiveTab();
+      if (tabs.isTabBlankUntitled(active)) {
+        tabs.loadIntoTab(active.id, result.content, filePath, result.lineEnding, result.mtime);
+        editor.render();
+      } else {
+        tabs.createTab({
+          title: window.Paddown.utils.basename(filePath),
+          filePath,
+          content: result.content,
+          lineEnding: result.lineEnding,
+          lastModified: result.mtime
+        });
+      }
+    } catch (err) {
+      console.error('Failed to open file:', filePath, err);
+    }
+  }
+
   // ─── Open Files from CLI Args ──────────────────────────────
 
   if (fileIO.isDesktop()) {
     try {
       const args = await window.__TAURI__.core.invoke('get_cli_args');
       for (const arg of args) {
-        // Skip flags
-        if (arg.startsWith('-')) continue;
-        try {
-          const filePath = arg;
-          const result = await fileIO.readFileContent(filePath);
-
-          settings.addRecentFile(filePath);
-
-          const active = tabs.getActiveTab();
-          if (tabs.isTabBlankUntitled(active)) {
-            tabs.loadIntoTab(active.id, result.content, filePath, result.lineEnding, result.mtime);
-            editor.render();
-          } else {
-            tabs.createTab({
-              title: filePath.split(/[/\\]/).pop(),
-              filePath,
-              content: result.content,
-              lineEnding: result.lineEnding,
-              lastModified: result.mtime
-            });
-          }
-        } catch (err) {
-          console.error('Failed to open CLI arg:', arg, err);
-        }
+        await openFileFromPath(arg);
       }
+    } catch (_) {}
+  }
+
+  // ─── Single-Instance: handle files from second-instance launches ──
+
+  if (fileIO.isDesktop() && window.__TAURI__?.event?.listen) {
+    try {
+      await window.__TAURI__.event.listen('second-instance', async (event) => {
+        const argv = event.payload || [];
+        for (const arg of argv) {
+          await openFileFromPath(arg);
+        }
+      });
     } catch (_) {}
   }
 
@@ -418,7 +447,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               tabs.loadIntoTab(active.id, result.content, saved.filePath, result.lineEnding, result.mtime);
             } else {
               tabs.createTab({
-                title: saved.filePath.split(/[/\\]/).pop(),
+                title: window.Paddown.utils.basename(saved.filePath),
                 filePath: saved.filePath,
                 content: result.content,
                 lineEnding: result.lineEnding,
@@ -462,7 +491,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ─── External Modification Check on Focus ─────────────────
 
   if (fileIO.isDesktop()) {
-    window.addEventListener('focus', () => editor.checkExternalModification());
+    let lastModCheck = 0;
+    const MOD_CHECK_THROTTLE_MS = 2000;
+    window.addEventListener('focus', () => {
+      const now = Date.now();
+      if (now - lastModCheck < MOD_CHECK_THROTTLE_MS) return;
+      lastModCheck = now;
+      editor.checkExternalModification();
+    });
   }
 
   // ─── Window Close Handler ─────────────────────────────────

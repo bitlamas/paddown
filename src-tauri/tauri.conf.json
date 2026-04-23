@@ -1,15 +1,15 @@
 {
   "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-cli/schema.json",
   "productName": "Paddown",
-  "version": "0.4.0",
-  "identifier": "com.paddown.app",
+  "version": "0.5.0",
+  "identifier": "sx.lamas.paddown",
   "build": {
     "frontendDist": "../src"
   },
   "app": {
     "withGlobalTauri": true,
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:"
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:"
     },
     "windows": [
       {
@@ -23,7 +23,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["nsis", "appimage", "dmg"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

@@ -37,16 +37,19 @@
   /* Inline code background — bg-text-200/5 */
   --color-code-inline-bg: rgba(0, 0, 0, 0.04);
 
-  /* Link decoration — decoration-current/40 */
-  --color-link-decoration: rgba(20, 24, 31, 0.4);
+  /* Derived from --color-text-primary at 40% — auto-flips with theme. */
+  --color-link-decoration: color-mix(in srgb, var(--color-text-primary) 40%, transparent);
 
-  /* Table borders — border-border-300 at 60% and 30% */
-  --color-table-border-head: rgba(176, 184, 196, 0.6);
-  --color-table-border-cell: rgba(176, 184, 196, 0.3);
+  /* Derived from --color-border-300 — auto-flip with theme. */
+  --color-table-border-head: color-mix(in srgb, var(--color-border-300) 60%, transparent);
+  --color-table-border-cell: color-mix(in srgb, var(--color-border-300) 30%, transparent);
 
-  /* Scrollbar — thumb colors */
-  --color-scrollbar-thumb:       rgba(176, 184, 196, 0.45);
-  --color-scrollbar-thumb-hover: rgba(176, 184, 196, 0.7);
+  /* Scrollbar — thumb colors (dark mode raises the percentages). */
+  --color-scrollbar-thumb:       color-mix(in srgb, var(--color-border-300) 45%, transparent);
+  --color-scrollbar-thumb-hover: color-mix(in srgb, var(--color-border-300) 70%, transparent);
+
+  /* Quick UI feedback transition (hover/active background tints). */
+  --transition-quick: 0.1s ease;
 
   /* Tab bar */
   --color-tab-bg:          transparent;
@@ -83,6 +86,23 @@
   --color-mod-bar-border:    #fde68a;
   --color-mod-bar-btn-bg:    #fef3c7;
   --color-mod-bar-btn-hover: #fde68a;
+
+  /* Tertiary text (placeholders, status bar, less-important UI text) */
+  --color-text-tertiary: #8a93a3;
+
+  /* Modal backdrop scrim (drop overlay, settings, about) */
+  --color-modal-scrim: rgba(0, 0, 0, 0.4);
+
+  /* Overlay text (always-light for visibility on the dark scrim) */
+  --color-overlay-text: #ffffff;
+
+  /* Drop shadows for elevated surfaces (menus, modals) */
+  --shadow-dropdown: 0 4px 12px rgba(0, 0, 0, 0.12);
+  --shadow-modal:    0 8px 32px rgba(0, 0, 0, 0.18);
+
+  /* Find / replace match highlights (overlay layer in editor) */
+  --color-find-match:         rgba(255, 220, 0, 0.45);
+  --color-find-match-current: rgba(255, 140, 0, 0.65);
 }
 
 /* =====================================================
@@ -108,13 +128,12 @@
   --color-about-bg:   #222430;
 
   --color-code-inline-bg: rgba(255, 255, 255, 0.06);
-  --color-link-decoration: rgba(226, 228, 233, 0.4);
 
-  --color-table-border-head: rgba(82, 88, 104, 0.6);
-  --color-table-border-cell: rgba(82, 88, 104, 0.3);
+  /* link-decoration + table borders auto-derive via color-mix in :root. */
 
-  --color-scrollbar-thumb:       rgba(82, 88, 104, 0.5);
-  --color-scrollbar-thumb-hover: rgba(82, 88, 104, 0.8);
+  /* Dark mode bumps scrollbar thumb visibility against the darker bg. */
+  --color-scrollbar-thumb:       color-mix(in srgb, var(--color-border-300) 50%, transparent);
+  --color-scrollbar-thumb-hover: color-mix(in srgb, var(--color-border-300) 80%, transparent);
 
   --color-tab-bg:          transparent;
   --color-tab-active-bg:   #1c1e26;
@@ -138,6 +157,15 @@
   --color-mod-bar-border: #44371a;
   --color-mod-bar-btn-bg: #3d3015;
   --color-mod-bar-btn-hover: #544222;
+
+  --color-text-tertiary: #6e7689;
+  --color-modal-scrim: rgba(0, 0, 0, 0.6);
+  /* --color-overlay-text inherits from light — overlay is always-light */
+  --shadow-dropdown: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --shadow-modal:    0 10px 40px rgba(0, 0, 0, 0.6);
+
+  --color-find-match:         rgba(255, 220, 0, 0.25);
+  --color-find-match-current: rgba(255, 140, 0, 0.45);
 
   /* One Dark syntax tokens */
   --tok-keyword:  #c678dd;

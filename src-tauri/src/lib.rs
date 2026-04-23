@@ -1,8 +1,9 @@
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
 use std::collections::HashMap;
 use std::sync::Mutex;
+use std::time::Duration;
 use tauri::Manager;
 use tauri::Emitter;
 use notify::{Watcher, RecursiveMode, RecommendedWatcher};
@@ -43,15 +44,37 @@ fn read_file(path: String) -> Result<String, String> {
 fn write_file(path: String, contents: String) -> Result<(), String> {
     let path = Path::new(&path);
 
-    // Ensure parent directory exists
-    if let Some(parent) = path.parent() {
-        if !parent.exists() {
-            return Err(format!("Directory does not exist: {}", parent.display()));
-        }
+    if contents.len() as u64 > MAX_FILE_SIZE {
+        return Err(format!(
+            "File too large ({:.1} MB, max {:.0} MB)",
+            contents.len() as f64 / (1024.0 * 1024.0),
+            MAX_FILE_SIZE as f64 / (1024.0 * 1024.0)
+        ));
     }
 
-    std::fs::write(path, contents)
-        .map_err(|e| format!("Failed to write {}: {}", path.display(), e))
+    let parent = path.parent().ok_or_else(|| {
+        format!("Path has no parent directory: {}", path.display())
+    })?;
+    if !parent.as_os_str().is_empty() && !parent.exists() {
+        return Err(format!("Directory does not exist: {}", parent.display()));
+    }
+
+    // Atomic write: stage to a sibling temp file, then rename. A crash
+    // mid-write leaves the original file intact.
+    let file_name = path.file_name().ok_or_else(|| {
+        format!("Path has no file name: {}", path.display())
+    })?;
+    let mut tmp_name = file_name.to_os_string();
+    tmp_name.push(".paddown-tmp");
+    let tmp_path = parent.join(&tmp_name);
+
+    std::fs::write(&tmp_path, contents)
+        .map_err(|e| format!("Failed to write {}: {}", tmp_path.display(), e))?;
+
+    std::fs::rename(&tmp_path, path).map_err(|e| {
+        let _ = std::fs::remove_file(&tmp_path);
+        format!("Failed to finalize write to {}: {}", path.display(), e)
+    })
 }
 
 // ─── Dialog Commands ─────────────────────────────────────────
@@ -97,20 +120,6 @@ fn show_export_html_dialog(default_name: Option<String>) -> Result<Option<String
 }
 
 // ─── Settings Commands ──────────────────────────────────────
-
-#[tauri::command]
-fn get_settings_path(app: tauri::AppHandle) -> Result<String, String> {
-    let dir = app.path().app_config_dir()
-        .map_err(|e| format!("Cannot resolve config dir: {}", e))?;
-
-    if !dir.exists() {
-        std::fs::create_dir_all(&dir)
-            .map_err(|e| format!("Cannot create config dir: {}", e))?;
-    }
-
-    let path = dir.join("settings.json");
-    Ok(path.to_string_lossy().into_owned())
-}
 
 #[tauri::command]
 fn read_settings(app: tauri::AppHandle) -> Result<String, String> {
@@ -175,8 +184,13 @@ struct UpdateInfo {
 
 #[tauri::command]
 fn check_for_updates(current_version: String) -> Result<Option<UpdateInfo>, String> {
-    let resp: serde_json::Value = ureq::get(
-        "https://api.github.com/repos/paddown/paddown/releases/latest"
+    let agent = ureq::AgentBuilder::new()
+        .timeout_connect(Duration::from_secs(5))
+        .timeout_read(Duration::from_secs(10))
+        .build();
+
+    let resp: serde_json::Value = agent.get(
+        "https://api.github.com/repos/bitlamas/paddown/releases/latest"
     )
     .set("User-Agent", "Paddown-Update-Checker")
     .set("Accept", "application/vnd.github.v3+json")
@@ -189,20 +203,16 @@ fn check_for_updates(current_version: String) -> Result<Option<UpdateInfo>, Stri
     let latest = tag.trim_start_matches('v');
     let current = current_version.trim_start_matches('v');
 
-    if latest.is_empty() || latest == current {
+    if latest.is_empty() {
         return Ok(None);
     }
 
-    // Simple version comparison (semver-like)
-    let latest_parts: Vec<u32> = latest.split('.').filter_map(|s| s.parse().ok()).collect();
-    let current_parts: Vec<u32> = current.split('.').filter_map(|s| s.parse().ok()).collect();
+    let latest_ver = semver::Version::parse(latest)
+        .map_err(|e| format!("Invalid latest version '{}': {}", latest, e))?;
+    let current_ver = semver::Version::parse(current)
+        .map_err(|e| format!("Invalid current version '{}': {}", current, e))?;
 
-    let is_newer = latest_parts.iter().zip(current_parts.iter())
-        .find(|(a, b)| a != b)
-        .map(|(a, b)| a > b)
-        .unwrap_or(latest_parts.len() > current_parts.len());
-
-    if is_newer {
+    if latest_ver > current_ver {
         let url = resp["html_url"].as_str().unwrap_or("").to_string();
         Ok(Some(UpdateInfo {
             version: latest.to_string(),
@@ -256,9 +266,7 @@ fn read_file_base64(path: String, base_dir: String) -> Result<String, String> {
     let bytes = std::fs::read(&p)
         .map_err(|e| format!("Failed to read {}: {}", p.display(), e))?;
 
-    let prefix = format!("data:{};base64,", mime);
-    let mut result = String::with_capacity(prefix.len() + (bytes.len() * 4 / 3) + 4);
-    result.push_str(&prefix);
+    let mut result = format!("data:{};base64,", mime);
     base64::engine::general_purpose::STANDARD.encode_string(&bytes, &mut result);
     Ok(result)
 }
@@ -306,7 +314,7 @@ fn list_recovery_files(app: tauri::AppHandle) -> Result<Vec<String>, String> {
         .flatten()
     {
         let path = entry.path();
-        if path.extension().map(|e| e == "json").unwrap_or(false) && path.is_file() {
+        if path.extension().is_some_and(|e| e == "json") && path.is_file() {
             files.push(path.to_string_lossy().into_owned());
         }
     }
@@ -315,8 +323,13 @@ fn list_recovery_files(app: tauri::AppHandle) -> Result<Vec<String>, String> {
 
 #[tauri::command]
 fn delete_recovery_file(app: tauri::AppHandle, filename: String) -> Result<(), String> {
-    // Reject path separators to prevent directory traversal
-    if filename.contains('/') || filename.contains('\\') || filename.contains("..") {
+    // Reject anything that isn't a single normal path component, blocking
+    // both traversal (`..`, separators) and absolute paths. This still allows
+    // legitimate names like `notes..bak.json`.
+    let as_path = Path::new(&filename);
+    let mut components = as_path.components();
+    let first = components.next();
+    if components.next().is_some() || !matches!(first, Some(Component::Normal(_))) {
         return Err("Invalid filename".to_string());
     }
     let path = recovery_dir_path(&app)?.join(&filename);
@@ -463,10 +476,13 @@ fn scan_directory(path: String, extensions: Vec<String>) -> Result<Vec<DirEntry>
                     });
                 }
             } else if file_type.is_file() {
-                let ext = path.extension()
-                    .map(|e| e.to_string_lossy().to_lowercase())
-                    .unwrap_or_default();
-                if exts.contains(&ext) {
+                let matches_ext = path.extension()
+                    .and_then(|e| e.to_str())
+                    .is_some_and(|e| {
+                        let lower = e.to_ascii_lowercase();
+                        exts.iter().any(|allowed| allowed == &lower)
+                    });
+                if matches_ext {
                     counter.count += 1;
                     files.push(DirEntry {
                         name,
@@ -533,13 +549,10 @@ struct WatcherState(Mutex<HashMap<String, RecommendedWatcher>>);
 #[tauri::command]
 fn start_watching(app: tauri::AppHandle, path: String) -> Result<(), String> {
     let state = app.state::<WatcherState>();
+    let mut watchers = state.0.lock().map_err(|e| format!("Lock error: {}", e))?;
 
-    // Check if already watching (short lock)
-    {
-        let watchers = state.0.lock().map_err(|e| format!("Lock error: {}", e))?;
-        if watchers.contains_key(&path) {
-            return Ok(());
-        }
+    if watchers.contains_key(&path) {
+        return Ok(());
     }
 
     let watch_path = path.clone();
@@ -548,7 +561,7 @@ fn start_watching(app: tauri::AppHandle, path: String) -> Result<(), String> {
     let mut watcher = RecommendedWatcher::new(
         move |res: Result<notify::Event, notify::Error>| {
             if res.is_ok() {
-                let _ = app_handle.emit("fs-change", &watch_path);
+                let _ = app_handle.emit_to("main", "fs-change", &watch_path);
             }
         },
         notify::Config::default(),
@@ -557,7 +570,6 @@ fn start_watching(app: tauri::AppHandle, path: String) -> Result<(), String> {
     watcher.watch(Path::new(&path), RecursiveMode::Recursive)
         .map_err(|e| format!("Failed to watch {}: {}", path, e))?;
 
-    let mut watchers = state.0.lock().map_err(|e| format!("Lock error: {}", e))?;
     watchers.insert(path, watcher);
     Ok(())
 }
@@ -572,6 +584,64 @@ fn stop_watching(app: tauri::AppHandle, path: String) -> Result<(), String> {
     Ok(())
 }
 
+// ─── One-shot migration from the legacy bundle id ───────────
+//
+// Paddown's bundle identifier was renamed from `com.paddown.app` to
+// `sx.lamas.paddown`. App config and data dirs are derived from the
+// identifier, so existing settings and recovery files would be orphaned
+// on next run. This copies them to the new location once, then leaves
+// the legacy directory in place (we don't touch the user's old data).
+fn migrate_legacy_bundle_id(app: &tauri::AppHandle) {
+    let migrate = |new_dir: PathBuf| {
+        let parent = match new_dir.parent() {
+            Some(p) => p.to_path_buf(),
+            None => return,
+        };
+        let old_dir = parent.join("com.paddown.app");
+        if !old_dir.is_dir() {
+            return;
+        }
+        // Skip if the new dir already has content — never overwrite.
+        if new_dir.is_dir()
+            && std::fs::read_dir(&new_dir)
+                .ok()
+                .and_then(|mut d| d.next())
+                .is_some()
+        {
+            return;
+        }
+        if std::fs::create_dir_all(&new_dir).is_err() {
+            return;
+        }
+        let entries = match std::fs::read_dir(&old_dir) {
+            Ok(e) => e,
+            Err(_) => return,
+        };
+        for entry in entries.flatten() {
+            let src = entry.path();
+            let dst = new_dir.join(entry.file_name());
+            if src.is_file() {
+                let _ = std::fs::copy(&src, &dst);
+            } else if src.is_dir() {
+                let _ = std::fs::create_dir_all(&dst);
+                if let Ok(inner) = std::fs::read_dir(&src) {
+                    for sub in inner.flatten() {
+                        if sub.path().is_file() {
+                            let _ = std::fs::copy(sub.path(), dst.join(sub.file_name()));
+                        }
+                    }
+                }
+            }
+        }
+    };
+    if let Ok(p) = app.path().app_config_dir() {
+        migrate(p);
+    }
+    if let Ok(p) = app.path().app_data_dir() {
+        migrate(p);
+    }
+}
+
 // ─── App Setup ───────────────────────────────────────────────
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -581,7 +651,26 @@ pub fn run() {
     std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
 
     tauri::Builder::default()
+        // Single-instance plugin must be registered first. When a second
+        // instance is launched (e.g. by double-clicking a .md file in
+        // Explorer), this callback fires in the running instance with the
+        // new process's argv; the new process then exits.
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            // Skip argv[0] (the exe path) so the frontend receives only
+            // the file arguments, matching get_cli_args's contract.
+            let args: Vec<String> = argv.into_iter().skip(1).collect();
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.unminimize();
+                let _ = window.show();
+                let _ = window.set_focus();
+                let _ = window.emit("second-instance", &args);
+            }
+        }))
         .plugin(tauri_plugin_window_state::Builder::new().build())
+        .setup(|app| {
+            migrate_legacy_bundle_id(&app.handle());
+            Ok(())
+        })
         .manage(WatcherState(Mutex::new(HashMap::new())))
         .invoke_handler(tauri::generate_handler![
             read_file,
@@ -596,7 +685,6 @@ pub fn run() {
             stop_watching,
             read_settings,
             write_settings,
-            get_settings_path,
             get_cli_args,
             get_portable_settings_path,
             open_url,

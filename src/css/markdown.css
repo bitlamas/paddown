@@ -71,7 +71,7 @@
 */
 .standard-markdown p {
   line-height: 1.7;         /* leading-[1.7] */
-  word-break: break-words;
+  overflow-wrap: anywhere;
   white-space: normal;
   margin: 0;
 }
@@ -142,7 +142,7 @@
 
 .standard-markdown li {
   padding-left: 0.5rem;
-  word-break: break-words;
+  overflow-wrap: anywhere;
   white-space: normal;
 }
 

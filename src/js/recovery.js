@@ -41,6 +41,7 @@ window.Paddown.recovery = (() => {
         filePath: tab.filePath || null,
         title: tab.title,
         content: ta.value,
+        lineEnding: tab.lineEnding || '\r\n',
         cursorStart: ta.selectionStart,
         cursorEnd: ta.selectionEnd,
         timestamp: Date.now()
@@ -55,15 +56,11 @@ window.Paddown.recovery = (() => {
     }
   }
 
-  function filenameFromPath(fullPath) {
-    return fullPath.split(/[/\\]/).pop();
-  }
-
   async function clearRecovery() {
     try {
       const files = await invoke('list_recovery_files');
       for (const f of files) {
-        try { await invoke('delete_recovery_file', { filename: filenameFromPath(f) }); } catch (_) {}
+        try { await invoke('delete_recovery_file', { filename: window.Paddown.utils.basename(f) }); } catch (_) {}
       }
     } catch (_) {}
   }
@@ -78,7 +75,7 @@ window.Paddown.recovery = (() => {
         try {
           const raw = await invoke('read_file', { path: f });
           const data = JSON.parse(raw);
-          data._recoveryFilename = filenameFromPath(f);
+          data._recoveryFilename = window.Paddown.utils.basename(f);
           items.push(data);
         } catch (_) {}
       }
@@ -95,13 +92,15 @@ window.Paddown.recovery = (() => {
       const item = items[i];
       const active = tabs.getActiveTab();
 
+      const lineEnding = item.lineEnding || '\r\n';
       if (i === 0 && tabs.isTabBlankUntitled(active)) {
-        tabs.loadIntoTab(active.id, item.content, item.filePath, '\r\n');
+        tabs.loadIntoTab(active.id, item.content, item.filePath, lineEnding);
       } else {
         tabs.createTab({
           title: item.title || 'Recovered',
           filePath: item.filePath || null,
-          content: item.content
+          content: item.content,
+          lineEnding
         });
       }
 

@@ -33,5 +33,5 @@ window.Paddown.views = (() => {
     setMode('split');
   }
 
-  return { init, setMode, getMode, cycle, MODES };
+  return { init, setMode, getMode, cycle };
 })();
