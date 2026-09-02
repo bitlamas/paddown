@@ -26,12 +26,14 @@ window.Paddown.renderer = (() => {
     return `<div class="table-wrapper"><table><thead>${header}</thead><tbody>${body}</tbody></table></div>`;
   };
 
-  // Task list items — use checkbox HTML
+  // Task list items — use checkbox HTML.
+  // The body goes in a wrapper div so the flex row is [checkbox | content]
+  // instead of one flex item per inline element.
   renderer.listitem = function(text, task, checked) {
     if (task) {
       const chk = checked ? ' checked=""' : '';
       const cleaned = text.replace(/^<input[^>]+>\s*/i, '');
-      return `<li class="task-list-item"><input type="checkbox" disabled${chk}> ${cleaned}</li>\n`;
+      return `<li class="task-list-item"><input type="checkbox" disabled${chk}><div class="task-content">${cleaned}</div></li>\n`;
     }
     return `<li>${text}</li>\n`;
   };

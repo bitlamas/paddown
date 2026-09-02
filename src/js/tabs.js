@@ -419,6 +419,7 @@ window.Paddown.tabs = (() => {
     getActiveTab,
     getAllTabs,
     getActiveTextarea,
+    getTextarea,
     markTabSaved,
     loadIntoTab,
     isTabDirty,

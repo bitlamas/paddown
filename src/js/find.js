@@ -93,6 +93,30 @@ window.Paddown.find = (() => {
     }
   }
 
+  // The overlay only measures correctly if it wraps EXACTLY like the textarea,
+  // so its box is sized here rather than in CSS: the textarea's content box is
+  // narrower than the pane by its scrollbar gutter, and any difference makes
+  // the two break lines at different columns, drifting the marks further apart
+  // the further down the document you go. clientWidth/clientHeight already
+  // exclude the scrollbars.
+  function syncMetrics() {
+    if (!highlightLayer || !attachedTextarea) return;
+    const w = attachedTextarea.clientWidth;
+    const h = attachedTextarea.clientHeight;
+    if (w) highlightLayer.style.width = `${w}px`;
+    if (h) highlightLayer.style.height = `${h}px`;
+  }
+
+  // Window resizes are only one way the textarea's content box changes:
+  // toggling the sidebar, cycling view modes, zooming, and the vertical
+  // scrollbar appearing as the document grows all do it without firing a
+  // resize event. Observing the element catches every case, and the callback
+  // is already coalesced to one per frame.
+  const metricsObserver = new ResizeObserver(() => {
+    syncMetrics();
+    syncScroll();
+  });
+
   function ensureAttached() {
     const ta = window.Paddown.tabs?.getActiveTextarea();
     if (ta === attachedTextarea) return;
@@ -100,12 +124,17 @@ window.Paddown.find = (() => {
     attachedTextarea = ta;
     if (attachedTextarea) {
       attachedTextarea.addEventListener('scroll', syncScroll);
+      metricsObserver.observe(attachedTextarea);
+      // Observer callbacks are async; the first measurement has to be ready
+      // before scrollCurrentIntoView() reads the overlay in this same tick.
+      syncMetrics();
     }
   }
 
   function detachFromTextarea() {
     if (attachedTextarea) {
       attachedTextarea.removeEventListener('scroll', syncScroll);
+      metricsObserver.unobserve(attachedTextarea);
       attachedTextarea = null;
     }
   }
@@ -174,7 +203,6 @@ window.Paddown.find = (() => {
 
     if (matches.length > 0) {
       currentMatchIdx = 0;
-      scrollToMatch(matches[0]);
       // Sync the textarea's selection too — cheap, and useful if the
       // user later focuses the editor (e.g. to start editing at the match).
       ta.setSelectionRange(matches[0].start, matches[0].end);
@@ -182,17 +210,38 @@ window.Paddown.find = (() => {
       currentMatchIdx = -1;
     }
 
+    // Render before scrolling: the scroll target is measured off the
+    // <mark> element, which only exists once the overlay is painted.
     renderHighlights();
+    scrollCurrentIntoView();
     updateCount();
   }
 
-  function scrollToMatch(match) {
+  // Measures the current match's real position from the overlay rather than
+  // estimating it as lineIndex * lineHeight. The textarea is `white-space:
+  // pre-wrap`, so one newline-delimited line can occupy dozens of visual
+  // rows; counting newlines lands hundreds of rows short in wrapped prose.
+  function scrollCurrentIntoView() {
     const ta = attachedTextarea;
-    if (!ta) return;
-    const lineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 20;
-    const lineNum = ta.value.slice(0, match.start).split('\n').length - 1;
-    const targetScroll = lineNum * lineHeight - ta.clientHeight / 2;
-    ta.scrollTop = Math.max(0, targetScroll);
+    if (!ta || !highlightLayer) return;
+    const mark = highlightLayer.querySelector('mark.current');
+    if (!mark) return;
+
+    // offsetTop is relative to the overlay (its only positioned ancestor)
+    // and is unaffected by scrolling, so it is already in content space.
+    const top = mark.offsetTop;
+    const height = mark.offsetHeight ||
+      parseFloat(getComputedStyle(ta).lineHeight) || 20;
+    const view = ta.clientHeight;
+
+    // Leave the view alone while the match is already comfortably on screen,
+    // so stepping through neighbouring matches doesn't jolt the page around.
+    const margin = Math.min(60, view / 4);
+    const offScreen = top < ta.scrollTop + margin ||
+                      top + height > ta.scrollTop + view - margin;
+    if (offScreen) {
+      ta.scrollTop = Math.max(0, top - (view - height) / 2);
+    }
     syncScroll();
   }
 
@@ -202,9 +251,9 @@ window.Paddown.find = (() => {
     const match = matches[idx];
     if (attachedTextarea) {
       attachedTextarea.setSelectionRange(match.start, match.end);
-      scrollToMatch(match);
     }
     renderHighlights();
+    scrollCurrentIntoView();
     updateCount();
   }
 
@@ -302,6 +351,13 @@ window.Paddown.find = (() => {
     return isOpen;
   }
 
+  // A tab switch swaps the textarea out from under the overlay. Without this
+  // the layer keeps painting the previous tab's matches over the new tab.
+  // onSearchChange() re-attaches before it searches.
+  function retarget() {
+    if (isOpen) onSearchChange();
+  }
+
   // Handle F3 / Shift+F3 globally, plus suppress editor-targeting
   // formatting shortcuts when the find/replace input has focus (those
   // operate on the active textarea regardless of focus).
@@ -324,5 +380,5 @@ window.Paddown.find = (() => {
     return false;
   }
 
-  return { open, close, isVisible, handleKeydown };
+  return { open, close, isVisible, retarget, handleKeydown };
 })();

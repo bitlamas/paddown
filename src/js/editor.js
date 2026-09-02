@@ -22,7 +22,7 @@ window.Paddown.editor = (() => {
     const md = ta.value;
     previewEl.innerHTML = marked.parse(md);
 
-    // Fix task list UL — add .contains-task-list if any task items inside
+    // Tag task list ULs — .contains-task-list tightens their left padding
     previewEl.querySelectorAll('ul').forEach(ul => {
       if (ul.querySelector('.task-list-item')) {
         ul.classList.add('contains-task-list');
@@ -223,12 +223,28 @@ window.Paddown.editor = (() => {
 
   // ─── External Modification Detection ──────────────────────
 
+  // The bar lives above #workspace, outside the tab panes, so nothing removes
+  // it on a tab switch. Drop it whenever it no longer describes the given tab
+  // — otherwise it keeps warning about file A while you edit file B, and its
+  // Reload button still points at A. Returns the bar when it is still valid.
+  function dropStaleModBar(tab) {
+    const bar = document.getElementById('external-mod-bar');
+    if (!bar) return null;
+    if (tab && bar.dataset.tabId === tab.id) return bar;
+    bar.remove();
+    return null;
+  }
+
   async function checkExternalModification() {
     const { tabs, fileIO } = window.Paddown;
     const tab = tabs.getActiveTab();
+    // Must stay above the early returns below — clearing a stale bar is this
+    // function's job on every tab switch, not just when a check can run.
+    const existing = dropStaleModBar(tab);
     if (!tab || !tab.filePath || !tab.lastModified) return;
     if (!fileIO.isDesktop()) return;
-    if (document.getElementById('external-mod-bar')) return;
+    // A bar already up for this tab is still accurate; don't re-check.
+    if (existing) return;
 
     try {
       const mtime = await fileIO.getMtime(tab.filePath);
@@ -241,10 +257,13 @@ window.Paddown.editor = (() => {
   }
 
   function showExternalModBar(tab) {
-    if (document.getElementById('external-mod-bar')) return;
+    // A bar for this same tab may have appeared while the mtime read was in
+    // flight; anything else gets cleared out.
+    if (dropStaleModBar(tab)) return;
 
     const bar = document.createElement('div');
     bar.id = 'external-mod-bar';
+    bar.dataset.tabId = tab.id;
     const safeTitle = window.Paddown.utils.escapeHtml(tab.title);
     bar.innerHTML =
       `<span>File "${safeTitle}" was modified externally.</span>` +
@@ -273,13 +292,16 @@ window.Paddown.editor = (() => {
     const { tabs, fileIO } = window.Paddown;
     try {
       const result = await fileIO.readFileContent(tab.filePath);
-      const ta = tabs.getActiveTextarea();
+      // Write into THIS tab's textarea, not whichever tab happens to be
+      // active — the bar can outlive a tab switch, and using the active
+      // textarea pastes one file's contents over another's.
+      const ta = tabs.getTextarea(tab.id);
       if (!ta) return;
-      tab.savedContent = result.content;
-      tab.lineEnding = result.lineEnding;
-      tab.lastModified = result.mtime;
       ta.value = result.content;
-      render();
+      tab.lineEnding = result.lineEnding;
+      // Re-baselines savedContent/lastModified and repaints the tab bar.
+      tabs.markTabSaved(tab.id, tab.filePath, result.mtime);
+      if (tabs.getActiveTab() === tab) render();
     } catch (err) {
       console.error('Reload failed:', err);
     }

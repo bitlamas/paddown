@@ -250,6 +250,21 @@ body {
   position: relative;
 }
 
+/* The overlay below has to wrap identically to the textarea, so the two share
+   one rule for every property that affects where a line breaks. Adding a
+   text-metric declaration to only one of them silently misaligns the find
+   highlights, so keep such properties here rather than in either rule. */
+#editor-pane .tab-textarea,
+.find-highlight-layer {
+  padding: 1.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.65;
+  tab-size: 2;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
 #editor-pane .tab-textarea {
   flex: 1;
   width: 100%;
@@ -257,14 +272,8 @@ body {
   resize: none;
   border: none;
   outline: none;
-  padding: 1.5rem;
-  font-family: var(--font-mono);
-  font-size: 0.875rem;
-  line-height: 1.65;
   color: var(--color-text-primary);
   background: transparent;
-  tab-size: 2;
-  white-space: pre-wrap;
   overflow-y: auto;
   position: relative;
   z-index: 1;
@@ -272,20 +281,17 @@ body {
 
 /* Find-match overlay: a transparent-text mirror of the active textarea
    with <mark> wrappers around matches. WebView2 doesn't render textarea
-   selection when the textarea isn't focused, so we paint our own. */
+   selection when the textarea isn't focused, so we paint our own.
+   find.js sets width/height from the textarea's clientWidth/clientHeight —
+   sizing this to the pane instead would make it wider than the textarea's
+   content box by the scrollbar gutter, wrapping it at a different column. */
 .find-highlight-layer {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
   margin: 0;
-  padding: 1.5rem;
-  font-family: var(--font-mono);
-  font-size: 0.875rem;
-  line-height: 1.65;
   color: transparent;
   background: transparent;
-  tab-size: 2;
-  white-space: pre-wrap;
-  overflow-wrap: break-word;
   overflow: auto;
   pointer-events: none;
   z-index: 0;
@@ -648,6 +654,10 @@ body {
 #workspace.mode-editor-only #preview-pane { display: none; }
 #workspace.mode-editor-only #editor-pane { border-right: none; }
 #workspace.mode-preview-only #editor-pane { display: none; }
+
+/* Single-pane modes: let the content use the whole visible area instead of
+   staying inside the 680px reading column that split view uses. */
+#workspace.mode-preview-only #preview-inner { max-width: none; }
 
 /* =====================================================
    STATUS BAR

@@ -1,6 +1,6 @@
 [package]
 name = "paddown"
-version = "0.5.0"
+version = "0.6.0"
 description = "Markdown notepad with professional chat interface styling"
 authors = ["Paddown"]
 edition = "2021"

@@ -22,7 +22,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const ta = tabs.getActiveTextarea();
     editor.attachToTextarea(ta);
     if (sidebar) sidebar.updateActiveHighlight();
-    if (fileIO.isDesktop()) editor.checkExternalModification();
+    find.retarget();
+    // Unguarded: this also clears a modification bar left over from the tab
+    // we just left. It no-ops on its own when not running on the desktop.
+    editor.checkExternalModification();
   });
 
   // Initialize sidebar (needs settings loaded first)
